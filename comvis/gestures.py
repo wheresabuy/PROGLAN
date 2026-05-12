@@ -38,12 +38,15 @@ class GestureRecognizerML:
             return "None"
         
         data = []
+        # Gunakan pergelangan tangan (landmark 0) sebagai titik referensi
+        wrist = hand_landmarks.landmark[0]
+        
         for lm in hand_landmarks.landmark:
-            data.append(lm.x)
+            data.append(lm.x - wrist.x)
         for lm in hand_landmarks.landmark:
-            data.append(lm.y)
+            data.append(lm.y - wrist.y)
         for lm in hand_landmarks.landmark:
-            data.append(lm.z)
+            data.append(lm.z - wrist.z)
         
         # Gunakan DataFrame agar sklearn tidak protes soal feature names
         columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]

@@ -101,7 +101,7 @@ if __name__ == "__main__":
         
         # Mapping gestur ke key virtual
         current_g = gesture_thread.current_gesture
-        if current_g in ["ATAS", "ATAS1"]:
+        if current_g == "ATAS":
             keys.overrides[pygame.K_UP] = True
         elif current_g == "BAWAH":
             keys.overrides[pygame.K_DOWN] = True
@@ -109,8 +109,9 @@ if __name__ == "__main__":
             keys.overrides[pygame.K_LEFT] = True
         elif current_g == "KANAN":
             keys.overrides[pygame.K_RIGHT] = True
-        elif current_g == "AMBIL_BARANG":
+        elif current_g in ["AMBIL", "ENTER"]:
             keys.overrides[pygame.K_RETURN] = True
+        # Gestur "DIAM" otomatis tidak meng-override apa-apa (Idle)
 
         if not any([journal.active, inventory.active, dialogue.active]):
             player.update(keys)

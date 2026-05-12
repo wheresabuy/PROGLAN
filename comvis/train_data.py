@@ -29,12 +29,17 @@ class DataCollector:
 
     def save_landmarks(self, landmarks, label):
         data = []
+        # Gunakan pergelangan tangan (landmark 0) sebagai titik referensi (0,0)
+        wrist = landmarks.landmark[0]
+        
+        # Simpan koordinat relatif (selisih dari pergelangan tangan)
         for lm in landmarks.landmark:
-            data.append(lm.x)
+            data.append(lm.x - wrist.x)
         for lm in landmarks.landmark:
-            data.append(lm.y)
+            data.append(lm.y - wrist.y)
         for lm in landmarks.landmark:
-            data.append(lm.z)
+            data.append(lm.z - wrist.z)
+            
         data.append(label)
         
         with open(self.data_file, mode='a', newline='') as f:
