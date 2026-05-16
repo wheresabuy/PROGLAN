@@ -1,20 +1,34 @@
 import pygame
 from src.missions.mission1 import Mission1Logic
 from src.missions.mission2 import Mission2Logic, METRO_START_DIALOGUE
+from src.missions.mission3 import Mission3Logic, PROLOGUE_M3
 
 class MissionManager:
-    def __init__(self, journal, dialogue):
+    def __init__(self, journal, dialogue, start_mission=1):
         self.journal = journal
         self.dialogue = dialogue
-        self.current_mission_num = 1
-        self.current_mission_logic = Mission1Logic(journal, dialogue)
+        self.current_mission_num = start_mission
         self.map_switched = False
+        
+        if start_mission == 1:
+            self.current_mission_logic = Mission1Logic(journal, dialogue)
+        elif start_mission == 3:
+            self.current_mission_logic = Mission3Logic(journal, dialogue)
+            self.dialogue.show(PROLOGUE_M3)
+            self.journal.add_entry("MISI 3: The Sanctuary - Harapan Terakhir.")
+        else:
+            self.current_mission_logic = Mission1Logic(journal, dialogue)
 
     def update(self, player, items, keys, effects=None):
         # Cek transisi misi
         if self.current_mission_num == 1 and self.current_mission_logic.phase == "REPAIRED":
             # Jika player sampai di ujung timur map misi 1 (Pintu Metro)
             if player.pos[0] > 2700 and player.pos[1] > 1300:
+                self.next_mission(player)
+        
+        elif self.current_mission_num == 2 and self.current_mission_logic.phase == "COMPLETED":
+            # Jika player sampai di ujung timur map misi 2
+            if player.pos[0] > 2200 and player.pos[1] > 1500:
                 self.next_mission(player)
 
         self.current_mission_logic.update(player, items, keys, effects)
@@ -25,9 +39,13 @@ class MissionManager:
         if self.current_mission_num == 2:
             self.current_mission_logic = Mission2Logic(self.journal, self.dialogue)
             self.dialogue.show(METRO_START_DIALOGUE)
-            # Reset posisi player untuk map baru
             player.pos = [100, 100] 
             self.journal.add_entry("MISI 2: Bayangan di Metro.")
+        elif self.current_mission_num == 3:
+            self.current_mission_logic = Mission3Logic(self.journal, self.dialogue)
+            self.dialogue.show(PROLOGUE_M3)
+            player.pos = [200, 200]
+            self.journal.add_entry("MISI 3: The Sanctuary - Harapan Terakhir.")
 
     def get_status_text(self, player):
         return self.current_mission_logic.get_status_text(player)

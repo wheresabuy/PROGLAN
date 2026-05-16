@@ -5,32 +5,55 @@ from src.core.spritesheet import Spritesheet
 class ZombieNPC:
     def __init__(self, x, y):
         self.pos = [x, y]
-        # Menggunakan spritesheet zombie baru
         self.sheet = Spritesheet("assets/enemies/zombie_new.png", 8, 8, scale=1.6)
         self.direction = 'down'
         self.state = 'stand'
         self.current_col = 0
         self.frame_timer = 0
         self.anim_speed = 10
-        self.speed = 3.5
+        self.speed = 2.5
+        self.stun_timer = 0
+        self.health = 100
 
-    def update(self, player_pos, player_state):
-        if player_state == 'run':
-            # Mengejar pemain
-            dx = player_pos[0] - self.pos[0]
-            dy = player_pos[1] - self.pos[1]
+    def update(self, player_pos, player_state, tactical_items=[]):
+        if self.stun_timer > 0:
+            self.stun_timer -= 1
+            self.state = 'stand'
+            return
+
+        # Prioritas: Cek apakah ada Decoy aktif
+        target_pos = player_pos
+        is_aggressive = (player_state == 'run')
+        
+        for item in tactical_items:
+            if item.item_type == "Decoy" and item.active and item.reached_target:
+                dx = item.pos[0] - self.pos[0]
+                dy = item.pos[1] - self.pos[1]
+                if math.hypot(dx, dy) < 400: # Radius dengar decoy
+                    target_pos = item.pos
+                    is_aggressive = True
+                    break
+
+        # Cek apakah terkena api Molotov
+        for item in tactical_items:
+            if item.item_type == "Molotov" and item.reached_target and item.active:
+                dx = item.pos[0] - self.pos[0]
+                dy = item.pos[1] - self.pos[1]
+                if math.hypot(dx, dy) < 50:
+                    self.health -= 2 # Terbakar!
+                    self.stun_timer = 20 # Panik kena api
+
+        if is_aggressive and self.health > 0:
+            dx = target_pos[0] - self.pos[0]
+            dy = target_pos[1] - self.pos[1]
             dist = math.hypot(dx, dy)
             
-            if dist > 30:
+            if dist > 10:
                 self.pos[0] += (dx / dist) * self.speed
                 self.pos[1] += (dy / dist) * self.speed
                 self.state = 'walk'
-                
-                # Update arah berdasarkan vektor gerak
-                if abs(dx) > abs(dy):
-                    self.direction = 'right' if dx > 0 else 'left'
-                else:
-                    self.direction = 'down' if dy > 0 else 'up'
+                if abs(dx) > abs(dy): self.direction = 'right' if dx > 0 else 'left'
+                else: self.direction = 'down' if dy > 0 else 'up'
             else:
                 self.state = 'stand'
         else:

@@ -1,8 +1,8 @@
 import pygame
 
 class DialogueBox:
-    def __init__(self, font_size=28):
-        self.font = pygame.font.Font(None, font_size)
+    def __init__(self, font_size=18):
+        self.font = pygame.font.SysFont("monospace", font_size)
         self.active = False
         self.messages = []
         self.current_index = 0

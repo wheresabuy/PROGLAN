@@ -2,23 +2,24 @@ import pygame
 import math
 
 class Loot:
-    def __init__(self, name, x, y, item_type, image_path=None, prompt=None):
+    def __init__(self, name, x, y, item_type, image=None, prompt=None):
         self.name = name
         self.pos = (x, y)
         self.item_type = item_type
-        self.prompt = prompt or f"Tekan ENTER untuk ambil {name}"
+        self.prompt = prompt or f"Tekan [ENTER] untuk ambil {name}"
         self.collected = False
         self.hover_offset = 0
         
-        if image_path:
-            try:
-                self.image = pygame.image.load(image_path).convert_alpha()
-                self.image.set_colorkey((255, 255, 255))
-                self.image = pygame.transform.scale(self.image, (64, 64))
-            except Exception as e:
-                print(f"Debug: Error loading {image_path}: {e}")
-                self.image = pygame.Surface((40, 40))
-                self.image.fill((255, 0, 0))
+        if image:
+            if isinstance(image, str): # Jika yang dikirim adalah path file
+                try:
+                    self.image = pygame.image.load(image).convert_alpha()
+                    self.image = pygame.transform.scale(self.image, (64, 64))
+                except Exception as e:
+                    self.image = pygame.Surface((40, 40))
+                    self.image.fill((255, 0, 0))
+            else: # Jika yang dikirim adalah object Surface (hasil slicing)
+                self.image = pygame.transform.scale(image, (64, 64))
         else:
             self.image = pygame.Surface((40, 40))
             self.image.fill((255, 215, 0))

@@ -4,7 +4,7 @@ class JournalManager:
     def __init__(self):
         self.entries = []
         self.active = False
-        self.font = pygame.font.Font(None, 24)
+        self.font = pygame.font.SysFont("monospace", 16)
 
     def add_entry(self, text):
         if text not in self.entries:
