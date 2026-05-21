@@ -134,3 +134,60 @@ Dibuat dengan dedikasi untuk **Tugas Besar Pemrograman Lanjut**.
 
 ---
 *Stay quiet. Stay alert. Survive.* 🧟‍♂️🔦
+
+## 🛠️ Technical Deep Dive: Analisis Kode & Arsitektur
+
+Project ini menggunakan arsitektur modular di mana setiap file memiliki tanggung jawab spesifik. Berikut adalah rincian fungsionalitas dan highlight baris kode krusial:
+
+### 🧠 1. Modul Computer Vision (`comvis/`)
+Modul ini adalah "mata" dari game, bertanggung jawab atas interaksi gestur.
+
+- **`gestures.py`**: Berisi thread utama pengenalan gestur.
+  - *Crucial Logic*: Penggunaan `threading.Lock()` untuk sinkronisasi data antar thread.
+  ```python
+  @property
+  def current_gesture(self):
+      with self._lock: # Mencegah race condition saat diakses game loop
+          return self._current_gesture
+  ```
+- **`train_data.py`**: Alat untuk merekam koordinat koordinat tangan (landmarks) ke file CSV.
+- **`train_model.py`**: Melatih model AI menggunakan algoritma **Random Forest** dari `scikit-learn`.
+- **`reset_data.py`**: Membersihkan dataset untuk pelatihan ulang.
+
+### 🏗️ 2. Mesin Inti (`src/core/`)
+Jantung dari logika permainan, mengelola sistem global.
+
+- **`crafting_system.py`**: Mengelola resep item menggunakan `frozenset` untuk pencocokan bahan tanpa urutan.
+  - *Crucial Logic*: `frozenset([bahan1, bahan2])` memungkinkan crafting berhasil meskipun urutan klik pemain berbeda.
+- **`mission_manager.py`**: State machine yang mengontrol transisi antar misi (Misi 1 ke Misi 2, dst).
+- **`smart_slicer.py`**: Slicer aset yang canggih menggunakan algoritma **Flood Fill** untuk mendeteksi "pulau" pixel non-transparan secara otomatis.
+  ```python
+  def _find_bounding_box(self, start_x, start_y, visited):
+      # Algoritma Flood Fill untuk auto-detect bounding box item pixel-art
+  ```
+- **`visual_effects.py`**: Mengelola sistem kegelapan dinamis, guncangan layar (shake), dan flash visual.
+- **`camera.py`**: Sistem kamera 2D yang mengikuti pemain dengan pembatasan (clamping) di tepi peta.
+- **`spritesheet.py`**: Memotong gambar spritesheet standar menjadi frame-frame animasi.
+- **`audio_manager.py`**: Mixer suara untuk background music (BGM) dan efek suara (SFX).
+
+### 👥 3. Entitas & Objek (`src/entities/`)
+Mendefinisikan perilaku makhluk dan benda di dunia game.
+
+- **`player.py`**: Mengelola status pemain (HP, Stamina), animasi, dan pergerakan yang kini telah di-*harden* dengan world-boundary clamping.
+- **`zombie.py`**: AI musuh yang memiliki mekanisme "Dengar" dan "Lihat".
+  - *Crucial Logic*: Zombie beralih dari mode `stand` ke `walk` jika mendengar suara lari atau decoy elektronik.
+- **`tactical_item.py`**: Logika untuk item yang dilempar/dipasang seperti Molotov dan Taser.
+- **`loot.py`**: Definisi item yang bisa diambil di map dengan deteksi jarak interaksi.
+
+### 🖥️ 4. Antarmuka Pengguna (`src/ui/`)
+Seluruh sistem HUD dan Menu.
+
+- **`inventory.py`**: Sistem grid inventori yang mendukung navigasi gestur dan selection logic untuk crafting.
+- **`item_codex.py`**: Database internal untuk memberikan info rarity dan kegunaan setiap item.
+- **`dialogue.py`**: Kotak dialog naratif yang mendukung mode "Thinking" (saat memanggil AI).
+- **`journal.py`**: Mencatat setiap progres misi agar pemain tidak tersesat.
+- **`hud.py`**: Menampilkan bar HP, Baterai, dan animasi smooth pada perolehan mata uang.
+- **`text_input.py`**: Komponen UI untuk input teks, digunakan pada puzzle atau interaksi khusus.
+
+---
+*Dibuat oleh wheresabuy - Dokumentasi teknis versi 2.1*
