@@ -17,18 +17,23 @@ class Player:
         self.speed_multiplier = 0.4
         self.adrenaline_timer = 0
 
-    def update(self, keys, collision_mask=None):
+    def update(self, keys, collision_mask=None, map_size=None):
         adrenaline_bonus = 2.0 if self.adrenaline_timer > 0 else 1.0
         if self.adrenaline_timer > 0: self.adrenaline_timer -= 1
 
-        base_speed = (5 if keys[pygame.K_LSHIFT] else 3) * adrenaline_bonus
-        speed = base_speed * self.speed_multiplier
+        base_speed = (5.0 if keys[pygame.K_LSHIFT] else 3.0) * adrenaline_bonus
+        speed = float(base_speed * self.speed_multiplier)
         moving = False
 
         if keys[pygame.K_RIGHT]: self.pos[0] += speed; self.direction = 'right'; moving = True
         if keys[pygame.K_LEFT]:  self.pos[0] -= speed; self.direction = 'left'; moving = True
         if keys[pygame.K_UP]:    self.pos[1] -= speed; self.direction = 'up'; moving = True
         if keys[pygame.K_DOWN]:  self.pos[1] += speed; self.direction = 'down'; moving = True
+
+        # Clamp position to map size if provided
+        if map_size:
+            self.pos[0] = max(0, min(self.pos[0], map_size[0] - 32))
+            self.pos[1] = max(0, min(self.pos[1], map_size[1] - 32))
 
         if keys[pygame.K_LSHIFT] and moving: self.state = 'run'
         elif moving: self.state = 'walk'

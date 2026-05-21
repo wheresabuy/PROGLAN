@@ -219,6 +219,21 @@ if __name__ == "__main__":
             battery_level = 0
             flashlight_on = False
 
+        # --- UPDATE LOGIC RESTORATION ---
+        can_update = not any([journal.active, inventory.active, dialogue.active, item_codex.active])
+        if hasattr(mission.current_mission_logic, 'text_input') and mission.current_mission_logic.text_input.active:
+            can_update = True 
+
+        if can_update:
+            player.update(keys, map_size=map_size) # Hardened with map_size
+            mission.update(player, items, keys, effects, events)
+            for t in active_tacticals[:]:
+                t.update()
+                if not t.active: active_tacticals.remove(t)
+            for z in zombies:
+                z.update(player.pos, player.state, active_tacticals)
+        # --- END RESTORATION ---
+
         if not dialogue.active:
             for item in items:
                 if item.check_interaction(player.pos) and not item.collected and keys[pygame.K_RETURN]:

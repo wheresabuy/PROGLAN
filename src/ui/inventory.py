@@ -28,9 +28,12 @@ class Inventory:
                 del self.items[item_name]
                 if item_name in self.item_list:
                     self.item_list.remove(item_name)
-                # Reset cursor jika out of bounds
-                if self.cursor_idx >= len(self.item_list):
-                    self.cursor_idx = max(0, len(self.item_list) - 1)
+            
+            # Reset cursor jika out of bounds
+            if not self.item_list:
+                self.cursor_idx = 0
+            else:
+                self.cursor_idx = min(self.cursor_idx, len(self.item_list) - 1)
 
     def toggle(self):
         self.active = not self.active
@@ -46,10 +49,13 @@ class Inventory:
         new_row = (row + dy) % self.grid_rows
         
         self.cursor_idx = new_row * self.grid_cols + new_col
+        # Clamp to item list length if needed to prevent ghost selection
+        if self.item_list:
+             self.cursor_idx = min(self.cursor_idx, len(self.item_list) - 1)
 
     def select_item(self):
         if not self.active: return
-        if self.cursor_idx < len(self.item_list):
+        if self.item_list and self.cursor_idx < len(self.item_list):
             if self.cursor_idx in self.selected_indices:
                 self.selected_indices.remove(self.cursor_idx)
             else:
@@ -58,6 +64,10 @@ class Inventory:
     def attempt_craft(self):
         if not self.active or len(self.selected_indices) < 2: return None
         
+        # Ensure all selected indices are still valid
+        self.selected_indices = [idx for idx in self.selected_indices if idx < len(self.item_list)]
+        if len(self.selected_indices) < 2: return "Pilih minimal 2 item."
+
         selected_names = [self.item_list[idx] for idx in self.selected_indices]
         result_name, description = self.crafting_system.check_recipe(selected_names)
         
@@ -75,10 +85,15 @@ class Inventory:
 
     def attempt_use(self):
         """Menggunakan item yang sedang disorot kursor"""
-        if not self.active or self.cursor_idx >= len(self.item_list): return None
+        if not self.active or not self.item_list or self.cursor_idx >= len(self.item_list): 
+            return None
         
         item_name = self.item_list[self.cursor_idx]
-        usable_items = ["Bom Molotov", "Umpan Elektronik", "Taser Rakitan", "Medkit Medis", "Energy Drink", "Stimulan Adrenalin"]
+        usable_items = [
+            "Bom Molotov", "Umpan Elektronik", "Taser Rakitan", 
+            "Medkit Medis", "Energy Drink", "Stimulan Adrenalin",
+            "Baterai Militer", "Baterai Cadangan"
+        ]
         
         if item_name in usable_items:
             self.remove_item(item_name)

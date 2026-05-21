@@ -60,9 +60,20 @@ class GestureThread(threading.Thread):
         threading.Thread.__init__(self)
         self.camera_path = camera_path
         self.recognizer = GestureRecognizerML()
-        self.current_gesture = "None"
+        self._current_gesture = "None"
+        self._lock = threading.Lock()
         self.running = True
         self.daemon = True
+
+    @property
+    def current_gesture(self):
+        with self._lock:
+            return self._current_gesture
+
+    @current_gesture.setter
+    def current_gesture(self, value):
+        with self._lock:
+            self._current_gesture = value
 
     def run(self):
         cap = cv2.VideoCapture(self.camera_path)
