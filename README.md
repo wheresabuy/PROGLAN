@@ -191,3 +191,46 @@ Seluruh sistem HUD dan Menu.
 
 ---
 *Dibuat oleh wheresabuy - Dokumentasi teknis versi 2.1*
+
+## 🧩 Arsitektur Modular: Mengapa File Bisa Terhubung?
+
+Mungkin kamu bertanya-tanya, bagaimana file di `src/core/` bisa tahu apa yang terjadi di `src/entities/`? Project ini menggunakan pola **Modular Package & Composition**:
+
+### 1. Sistem Package Python
+Setiap folder di dalam `src/` memiliki file `__init__.py`. Ini memberi tahu Python bahwa folder tersebut adalah sebuah **Package**. Dengan ini, kita bisa melakukan import seperti:
+```python
+from src.entities.player import Player
+```
+Artinya: "Pergi ke folder `src`, masuk ke folder `entities`, buka file `player.py`, dan ambil class `Player`."
+
+### 2. Pola Komposisi (Composition)
+Di dalam `main.py`, kita tidak membuat satu file raksasa. Sebaliknya, `main.py` bertindak sebagai **Manager** yang menyatukan "potongan puzzle":
+- Ia mengambil sistem kamera dari `core`.
+- Ia mengambil logika pemain dari `entities`.
+- Ia mengambil tampilan dari `ui`.
+Semua objek ini kemudian dimasukkan ke dalam **Game Loop** utama untuk saling berinteraksi.
+
+---
+
+## 🏃 Logika Animasi: Bagaimana Sprite Bergerak?
+
+Animasi dalam game ini tidak menggunakan file video, melainkan **Frame-based Sprite Slicing**. Berikut logikanya:
+
+### 1. Pemotongan (Slicing)
+Class `Spritesheet` memotong satu gambar besar menjadi grid (misal: 8 kolom, 8 baris). Setiap kotak kecil adalah satu **Frame**.
+
+### 2. State & Direction
+Pemain memiliki variabel `state` (stand, walk, run) dan `direction` (up, down, left, right).
+- **Baris (Row)** ditentukan oleh `direction`.
+- **Kolom (Column)** ditentukan oleh waktu.
+
+### 3. Frame Timer Logic (Crucial!)
+Agar animasi tidak bergerak terlalu cepat, kita menggunakan sistem **Timer**.
+```python
+self.frame_timer += 1
+if self.frame_timer >= self.anim_speed: # anim_speed mengontrol FPS animasi
+    self.frame_timer = 0
+    # Loop kolom 0 sampai 5 untuk animasi jalan
+    self.current_col = (self.current_col + 1) % 6 
+```
+Setiap kali `frame_timer` mencapai batas tertentu, kolom gambar akan bergeser ke kanan. Saat mencapai akhir, ia kembali ke nol (Modulo `%`). Inilah yang menciptakan ilusi gerakan yang mulus.
