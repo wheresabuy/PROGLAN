@@ -235,6 +235,8 @@ if __name__ == "__main__":
                 z.update(player.pos, player.state, active_tacticals)
         # --- END RESTORATION ---
 
+        camera.update(player.pos) # FIX: Kamera harus update tiap frame!
+
         if not dialogue.active:
             for item in items:
                 if item.check_interaction(player.pos) and not item.collected and keys[pygame.K_RETURN]:
