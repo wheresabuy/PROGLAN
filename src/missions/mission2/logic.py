@@ -61,13 +61,13 @@ class Mission2Logic:
 
         # Tahap 2: Generator Check
         if 100 < player.pos[0] < 300 and 100 < player.pos[1] < 300 and not self.states["generator_b_on"]:
-            if keys[pygame.K_f]:
+            if keys[pygame.K_RETURN]: # Diubah dari K_f ke K_RETURN
                 self.states["generator_b_on"] = True
                 self.dialogue.show(["Generator Sektor B menyala!", "Pintu Lab Medis sekarang memiliki daya."])
 
         # Tahap 4: Final Escape
         if self.states["has_solvent"] and 2200 < player.pos[0] < 2400 and 1500 < player.pos[1] < 1700:
-            if keys[pygame.K_f]:
+            if keys[pygame.K_RETURN]: # Diubah dari K_f ke K_RETURN
                 self.phase = "COMPLETED"
                 self.dialogue.show([
                     "Menuangkan cairan pelarut ke lendir bio...",
@@ -92,12 +92,12 @@ class Mission2Logic:
         # Generator
         if not self.states["generator_b_on"]:
             if math.hypot(200 - player.pos[0], 200 - player.pos[1]) < 150:
-                screen.blit(font.render("Tekan F: Nyalakan Generator", True, (255, 255, 0)), camera.apply((150, 150)))
+                screen.blit(font.render("Tekan ENTER: Nyalakan Generator", True, (255, 255, 0)), camera.apply((150, 150)))
         
         # Pintu Bio-Lock
         if self.states["has_solvent"] and not self.phase == "COMPLETED":
              if math.hypot(2300 - player.pos[0], 1600 - player.pos[1]) < 150:
-                screen.blit(font.render("Tekan F: Gunakan Solvent", True, (255, 255, 0)), camera.apply((2250, 1550)))
+                screen.blit(font.render("Tekan ENTER: Gunakan Solvent", True, (255, 255, 0)), camera.apply((2250, 1550)))
 
     def get_status_text(self, player):
         if not self.states["bio_lock_inspected"]: return QUEST_M2_HINTS["bio_lock"]

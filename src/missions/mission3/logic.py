@@ -196,10 +196,20 @@ class AdvancedNPC:
 # MAIN MISSION LOGIC
 # =============================================================================
 
+from src.core.ai_backend import DialogueAI
+from src.ui.text_input import TextInput
+
 class Mission3Logic:
     def __init__(self, journal, dialogue):
         self.journal, self.dialogue = journal, dialogue
         self.phase = "ARRIVAL"
+        
+        # --- AI & Input Systems ---
+        # NOTE: User should set GEMINI_API_KEY environment variable
+        self.ai = DialogueAI() 
+        self.text_input = TextInput(200, 400, 400)
+        self.interacting_npc = None
+        
         self.pop_manager = SanctuaryPopulation("FREE Mana Seed Character Base Demo 2.0")
         self.npcs, self.world_objects = [], []
         self._seed_sanctuary()
@@ -208,6 +218,7 @@ class Mission3Logic:
         self.states = {"gate_report": False, "elder_met": False, "tasks_done": 0, "alarm_active": False, "last_key": False}
 
     def _seed_sanctuary(self):
+        # ... (rest of _seed_sanctuary)
         self.npcs.append(self.pop_manager.generate_random_npc("Guard", "Kapten Jaka", (400, 300)))
         self.npcs.append(self.pop_manager.generate_random_npc("Elite", "Penatua Aris", (1200, 800)))
         for i in range(80):
@@ -217,16 +228,41 @@ class Mission3Logic:
         self.world_objects.append(SanctuaryObject("West Fire", (800, 800), "FIRE"))
         for _ in range(15): self.world_objects.append(SanctuaryObject("Bench", (random.randint(500, 3500), random.randint(500, 2500)), "BENCH"))
 
-    def update(self, player, items, keys, effects=None):
+    def update(self, player, items, keys, effects=None, events=None):
+        # 1. Update Entities & Objects
         for npc in self.npcs: npc.update(player.pos, self.states["alarm_active"])
         for obj in self.world_objects: obj.update()
+        
+        # 2. Handle Text Input Events
+        if events and self.text_input.active:
+            for event in events:
+                user_msg = self.text_input.handle_event(event)
+                if user_msg and self.interacting_npc:
+                    # Send to AI
+                    self.ai.request_dialogue(self.interacting_npc.name, self.interacting_npc.role, user_msg)
+                    self.dialogue.show(["..."], is_thinking=True)
+                    self.text_input.active = False
+            return # Don't process other updates while typing
+
+        # 3. Check for AI Responses
+        ai_resp = self.ai.get_latest_response()
+        if ai_resp:
+            self.dialogue.is_thinking = False # Reset thinking state
+            self.dialogue.show([ai_resp])
+            self.interacting_npc = None
+
+        # 4. Interaction Detection
         enter = keys[pygame.K_RETURN]
-        for npc in self.npcs:
-            dist = math.hypot(player.pos[0] - npc.pos[0], player.pos[1] - npc.pos[1])
-            if dist < 80 and enter and not self.states["last_key"]:
-                if npc.name == "Kapten Jaka": self.states["gate_report"] = True
-                elif npc.name == "Penatua Aris": self.states["elder_met"] = True
-                self.dialogue.show(f"{npc.name}: Halo!")
+        if not self.dialogue.active and not self.text_input.active:
+            for npc in self.npcs:
+                dist = math.hypot(player.pos[0] - npc.pos[0], player.pos[1] - npc.pos[1])
+                if dist < 80 and enter and not self.states["last_key"]:
+                    self.interacting_npc = npc
+                    self.text_input.active = True
+                    # Progression flags
+                    if npc.name == "Kapten Jaka": self.states["gate_report"] = True
+                    elif npc.name == "Penatua Aris": self.states["elder_met"] = True
+        
         self.states["last_key"] = enter
 
     def draw_ground(self, screen, camera):
@@ -245,9 +281,13 @@ class Mission3Logic:
         entities = self.npcs + self.world_objects
         for ent in sorted(entities, key=lambda e: e.pos[1]):
             ent.draw(screen, camera, self.font_bubble)
-            if hasattr(ent, 'name'):
+            if hasattr(ent, 'name') and isinstance(ent, AdvancedNPC):
                 d_p = camera.apply(ent.pos)
                 screen.blit(self.font_name.render(ent.name, True, (255, 255, 255)), (d_p[0] - 20, d_p[1] - 45))
+        
+        # Draw Text Input Overlay
+        if self.text_input.active:
+            self.text_input.draw(screen)
 
     def get_status_text(self, player):
         return "DARURAT!" if self.states["alarm_active"] else "Jelajahi Sanctuary."

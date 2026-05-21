@@ -19,19 +19,23 @@ class MissionManager:
         else:
             self.current_mission_logic = Mission1Logic(journal, dialogue)
 
-    def update(self, player, items, keys, effects=None):
+    def update(self, player, items, keys, effects=None, events=None):
         # Cek transisi misi
         if self.current_mission_num == 1 and self.current_mission_logic.phase == "REPAIRED":
-            # Jika player sampai di ujung timur map misi 1 (Pintu Metro)
             if player.pos[0] > 2700 and player.pos[1] > 1300:
                 self.next_mission(player)
-        
         elif self.current_mission_num == 2 and self.current_mission_logic.phase == "COMPLETED":
-            # Jika player sampai di ujung timur map misi 2
             if player.pos[0] > 2200 and player.pos[1] > 1500:
                 self.next_mission(player)
 
-        self.current_mission_logic.update(player, items, keys, effects)
+        # Pass events for AI input handling in Mission 3
+        if hasattr(self.current_mission_logic, 'update'):
+            import inspect
+            sig = inspect.signature(self.current_mission_logic.update)
+            if 'events' in sig.parameters:
+                self.current_mission_logic.update(player, items, keys, effects, events)
+            else:
+                self.current_mission_logic.update(player, items, keys, effects)
 
     def next_mission(self, player):
         self.current_mission_num += 1

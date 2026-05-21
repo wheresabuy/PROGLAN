@@ -144,7 +144,7 @@ if __name__ == "__main__":
     zombies = [ZombieNPC(1000, 500), ZombieNPC(1500, 800), ZombieNPC(2000, 300)]
 
     flashlight_on = False
-    battery_level = 0.0
+    battery_level = 100.0 # Baterai mulai penuh
     font_pixel = pygame.font.SysFont("monospace", 14) 
     dialogue.show(PROLOG_DIALOGUE)
 
@@ -155,7 +155,10 @@ if __name__ == "__main__":
             camera = Camera(WIDTH, HEIGHT, map_size[0], map_size[1])
             effects.trigger_flash(200)
 
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        current_g = gesture_thread.current_gesture # Baca gestur SEKALI per frame
+
+        for event in events:
             if event.type == pygame.QUIT:
                 gesture_thread.stop()
                 pygame.quit(); sys.exit()
@@ -189,39 +192,32 @@ if __name__ == "__main__":
                             elif used_item == "Medkit Medis":
                                 player.health = 100; player.injured = False; player.speed_multiplier = 1.0
                                 dialogue.show(["Menggunakan Medkit. Luka sembuh total!"])
+                            elif used_item in ["Baterai Militer", "Baterai Cadangan"]:
+                                battery_level = min(100.0, battery_level + 50.0)
+                                dialogue.show(["Baterai senter terisi kembali!"])
                 
                 if event.key == pygame.K_j: journal.toggle()
                 if event.key == pygame.K_i: inventory.toggle()
                 if event.key == pygame.K_l: item_codex.toggle()
-                if event.key == pygame.K_f and battery_level > 0: flashlight_on = not flashlight_on
+                if event.key == pygame.K_f:
+                    if battery_level > 0: flashlight_on = not flashlight_on
+                    else: dialogue.show(["Baterai habis! Cari baterai cadangan."])
                 if dialogue.active and event.key == pygame.K_RETURN: dialogue.next_message()
 
         keys = KeyProxy(pygame.key.get_pressed())
-        current_g = gesture_thread.current_gesture
+        # Optimasi: Gunakan gestur untuk mensimulasikan KEYDOWN event agar tidak berulang (debounce)
+        # Namun untuk movement, tetap gunakan state keys.overrides
         if not inventory.active:
             if current_g == "ATAS": keys.overrides[pygame.K_UP] = True
             elif current_g == "BAWAH": keys.overrides[pygame.K_DOWN] = True
             elif current_g == "KIRI": keys.overrides[pygame.K_LEFT] = True
             elif current_g == "KANAN": keys.overrides[pygame.K_RIGHT] = True
             elif current_g in ["AMBIL", "ENTER"]: keys.overrides[pygame.K_RETURN] = True
-        else:
-            if current_g == "ATAS": inventory.move_cursor(0, -1)
-            elif current_g == "BAWAH": inventory.move_cursor(0, 1)
-            elif current_g == "KIRI": inventory.move_cursor(-1, 0)
-            elif current_g == "KANAN": inventory.move_cursor(1, 0)
-            elif current_g == "AMBIL": inventory.select_item()
-
-        if not any([journal.active, inventory.active, dialogue.active, item_codex.active]):
-            player.update(keys)
-            mission.update(player, items, keys, effects)
-            for t in active_tacticals[:]:
-                t.update()
-                if not t.active: active_tacticals.remove(t)
-            for z in zombies:
-                z.update(player.pos, player.state, active_tacticals)
         
-        camera.update(player.pos)
-        if flashlight_on: battery_level -= 0.01
+        # Penanganan Baterai Habis
+        if battery_level <= 0:
+            battery_level = 0
+            flashlight_on = False
 
         if not dialogue.active:
             for item in items:

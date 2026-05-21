@@ -7,14 +7,16 @@ class DialogueBox:
         self.messages = []
         self.current_index = 0
         self.box_rect = pygame.Rect(50, 450, 700, 120)
+        self.is_thinking = False # Added thinking state
 
-    def show(self, messages):
+    def show(self, messages, is_thinking=False):
         if isinstance(messages, str):
             self.messages = [messages]
         else:
             self.messages = messages
         self.current_index = 0
         self.active = True
+        self.is_thinking = is_thinking
 
     def next_message(self):
         self.current_index += 1
@@ -41,10 +43,16 @@ class DialogueBox:
             pygame.draw.rect(screen, (180, 180, 200), self.box_rect, 3)
             
             # Render Text
-            text = self.messages[self.current_index]
+            if self.is_thinking:
+                pulse = (pygame.time.get_ticks() // 500) % 2
+                text = "Sedang berpikir" + ("..." if pulse else ".")
+            else:
+                text = self.messages[self.current_index]
+            
             text_surface = self.font.render(text, True, (255, 255, 255))
             screen.blit(text_surface, (self.box_rect.x + 20, self.box_rect.y + 25))
             
             # Hint to continue
-            hint = self.font.render("[Press Enter]", True, (200, 200, 100))
-            screen.blit(hint, (self.box_rect.right - 150, self.box_rect.bottom - 35))
+            if not self.is_thinking:
+                hint = self.font.render("[Press Enter]", True, (200, 200, 100))
+                screen.blit(hint, (self.box_rect.right - 150, self.box_rect.bottom - 35))

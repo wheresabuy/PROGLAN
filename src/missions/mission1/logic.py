@@ -30,7 +30,7 @@ class Mission1Logic:
         # 2. Logic Gerbang Terkunci
         if 1800 < player.pos[0] < 1900 and 700 < player.pos[1] < 900 and not self.states["gate_opened"]:
             if self.states["has_gate_key"]:
-                if keys[pygame.K_e]:
+                if keys[pygame.K_RETURN]: # Diubah dari K_e ke K_RETURN agar konsisten
                     self.states["gate_opened"] = True
                     self.dialogue.show(["Membuka gerbang pusat kota...", "Akses ke area timur terbuka."])
             else:
@@ -40,7 +40,7 @@ class Mission1Logic:
         # 3. Logic Generator
         if 2300 < player.pos[0] < 2400 and 450 < player.pos[1] < 550 and not self.states["generator_on"]:
             has_fuel = any(i.name == "Jerigen Bensin" and i.collected for i in items)
-            if has_fuel and keys[pygame.K_e]:
+            if has_fuel and keys[pygame.K_RETURN]: # Diubah dari K_e ke K_RETURN
                 self.states["generator_on"] = True
                 self.dialogue.show(["Listrik menyala! Brankas sekarang aktif."])
 
