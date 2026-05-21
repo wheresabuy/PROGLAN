@@ -122,7 +122,7 @@ if __name__ == "__main__":
     crafting_system = CraftingSystem()
     item_codex = ItemCodex()
 
-    player = Player(400, 400) # Mulai di dekat gerbang Sanctuary
+    player = Player(400, 400) # Mulai di posisi default misi 1
     dialogue = DialogueBox()
     journal = JournalManager()
     inventory = Inventory()
@@ -131,10 +131,11 @@ if __name__ == "__main__":
     currency = CurrencyManager()
     hud = HUD(currency)
     
-    mission = MissionManager(journal, dialogue, start_mission=3)
+    # Mulai dari MISI 1
+    mission = MissionManager(journal, dialogue, start_mission=1)
     effects = VisualEffects(WIDTH, HEIGHT)
 
-    bg_img, items, map_size = load_mission_assets(3, icon_map)
+    bg_img, items, map_size = load_mission_assets(1, icon_map)
     camera = Camera(WIDTH, HEIGHT, map_size[0], map_size[1])
 
     # List untuk menampung item taktis yang aktif di map
