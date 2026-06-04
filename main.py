@@ -33,17 +33,17 @@ def load_mission_assets(mission_num, icon_map):
     if mission_num == 1:
         bg = pygame.image.load("assets/images/background.png").convert()
         items = [
-            Loot("Kotak P3K", 250, 300, "medkit", get_icon("Pembalut Lukaku")),
+            Loot("Kotak P3K", 250, 300, "medkit", "assets/images/p3k.png"),
             Loot("Baju Survival", 300, 500, "clothing", get_icon("Kain Bekas")),
             Loot("Foto Kusam", 150, 150, "photo"),
-            Loot("Kunci Gerbang", 500, 1400, "key", get_icon("Lempeng Besi")),
-            Loot("Jerigen Bensin", 2200, 1400, "fuel", get_icon("Jerigen Bensin")),
-            Loot("Antena Radio", 1500, 400, "antenna", get_icon("Antena Radio")),
+            Loot("Kunci Gerbang", 500, 1400, "key", "assets/images/kuncigerbang.png"),
+            Loot("Jerigen Bensin", 2200, 1400, "fuel", "assets/images/jerigenbensin.png"),
+            Loot("Antena Radio", 1500, 400, "antenna", "assets/images/antena.png"),
             Loot("Baterai Militer", 2500, 500, "safe", get_icon("Baterai Militer")),
-            Loot("Chip Frekuensi", 2700, 100, "chip", get_icon("Chip Frekuensi")),
+            Loot("Chip Frekuensi", 2700, 100, "chip", "assets/images/chip.png"),
             Loot("Catatan Militer", 1000, 1000, "note", get_icon("Kain Bekas")),
-            Loot("Generator", 2350, 500, "decoration", get_icon("Lempeng Besi")),
-            Loot("Mayat Ilmuwan", 2700, 150, "decoration", get_icon("Kain Bekas")),
+            Loot("Generator", 2350, 500, "decoration", "assets/images/generator.png"),
+            Loot("Mayat Ilmuwan", 2700, 150, "decoration", "assets/images/mayat.png"),
             
             # --- ITEM BARU UNTUK CRAFTING ---
             Loot("Kabel", 400, 600, "material", get_icon("Kabel")),
@@ -130,11 +130,11 @@ if __name__ == "__main__":
     currency = CurrencyManager()
     hud = HUD(currency)
     
-    # Mulai dari MISI 1
-    mission = MissionManager(journal, dialogue, start_mission=1)
+    # LONCAT LANGSUNG KE MISI 3 (Untuk Testing)
+    mission = MissionManager(journal, dialogue, start_mission=3)
     effects = VisualEffects(WIDTH, HEIGHT)
 
-    bg_img, items, map_size = load_mission_assets(1, icon_map)
+    bg_img, items, map_size = load_mission_assets(mission.current_mission_num, icon_map)
     camera = Camera(WIDTH, HEIGHT, map_size[0], map_size[1])
 
     # List untuk menampung item taktis yang aktif di map
@@ -148,7 +148,66 @@ if __name__ == "__main__":
     font_pixel = pygame.font.SysFont("monospace", 14) 
     dialogue.show(PROLOG_DIALOGUE)
 
+    from src.core.minigame_manager import MiniGameManager
+    from src.core.minigames.shooting_range import ShootingRangeUltimate
+    from src.core.minigames.infinite_runner import MetroRunnerUltimate
+
+    class MainEngineProxy: # Minimal proxy for MiniGameManager
+        def __init__(self, screen, clock, currency):
+            self.screen, self.clock, self.currency = screen, clock, currency
+
+    proxy = MainEngineProxy(screen, clock, currency)
+    minigame_manager = MiniGameManager(proxy)
+    
+    # FORCED DIRECT LAUNCH (As requested)
+    minigame_manager.start_minigame(ShootingRangeUltimate)
+    
+    # State for gesture debouncing
+    last_g = "None"
+
     while True:
+        dt = clock.tick(60) / 16.67
+        
+        # --- MINIGAME LOOP OVERRIDE ---
+        if minigame_manager.in_minigame:
+            events = pygame.event.get()
+            current_g = gesture_thread.current_gesture
+            h_pos = gesture_thread.hand_pos
+            
+            # Convert normalized hand pos to screen pixels
+            hx, hy = int(h_pos[0] * WIDTH), int(h_pos[1] * HEIGHT)
+
+            for event in events:
+                if event.type == pygame.QUIT: pygame.quit(); sys.exit()
+                minigame_manager.active_game.handle_event(event)
+            
+            # HAND CURSOR MOVEMENT
+            if current_g != "None":
+                fake_move = pygame.event.Event(pygame.MOUSEMOTION, {'pos': (hx, hy)})
+                minigame_manager.active_game.handle_event(fake_move)
+            
+            # PISTOL GESTURE WITH MOTION RECOIL (Tangan menyentak ke atas untuk nembak)
+            if gesture_thread.recoil_active:
+                fake_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, {'button': 1, 'pos': (hx, hy)})
+                minigame_manager.active_game.handle_event(fake_click)
+            
+            # FIST GESTURE FOR RELOAD (Mengepal tangan untuk reload)
+            if current_g == "FIST":
+                fake_reload = pygame.event.Event(pygame.KEYDOWN, {'key': pygame.K_r})
+                minigame_manager.active_game.handle_event(fake_reload)
+            
+            last_g = current_g
+            
+            minigame_manager.update(dt)
+            minigame_manager.draw()
+            pygame.display.flip()
+            continue
+        if hasattr(minigame_manager, 'last_result') and minigame_manager.last_result:
+            res = minigame_manager.last_result
+            minigame_manager.last_result = None
+            if 'switch_mission' in res:
+                mission.switch_to_mission(res['switch_mission'], player)
+
         if mission.map_switched:
             mission.map_switched = False
             bg_img, items, map_size = load_mission_assets(mission.current_mission_num, icon_map)
@@ -162,6 +221,19 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 gesture_thread.stop()
                 pygame.quit(); sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                # Only clickable when no modals are active
+                if not any([dialogue.active, journal.active, inventory.active, item_codex.active]):
+                    mx, my = event.pos
+                    # Button 1: Misi 1 (520, 20)
+                    if 520 <= mx <= 600 and 20 <= my <= 50:
+                        mission.switch_to_mission(1, player)
+                    # Button 2: Misi 2 (610, 20)
+                    elif 610 <= mx <= 690 and 20 <= my <= 50:
+                        mission.switch_to_mission(2, player)
+                    # Button 3: Misi 3 (700, 20)
+                    elif 700 <= mx <= 780 and 20 <= my <= 50:
+                        mission.switch_to_mission(3, player)
             if event.type == pygame.KEYDOWN:
                 if item_codex.active:
                     if event.key == pygame.K_UP: item_codex.scroll(-1)
@@ -205,14 +277,27 @@ if __name__ == "__main__":
                 if dialogue.active and event.key == pygame.K_RETURN: dialogue.next_message()
 
         keys = KeyProxy(pygame.key.get_pressed())
-        # Optimasi: Gunakan gestur untuk mensimulasikan KEYDOWN event agar tidak berulang (debounce)
-        # Namun untuk movement, tetap gunakan state keys.overrides
-        if not inventory.active:
-            if current_g == "ATAS": keys.overrides[pygame.K_UP] = True
-            elif current_g == "BAWAH": keys.overrides[pygame.K_DOWN] = True
-            elif current_g == "KIRI": keys.overrides[pygame.K_LEFT] = True
-            elif current_g == "KANAN": keys.overrides[pygame.K_RIGHT] = True
-            elif current_g in ["AMBIL", "ENTER"]: keys.overrides[pygame.K_RETURN] = True
+        # --- GESTURE CONTROL MAPPING (Adventure Mode) ---
+        h_pos = gesture_thread.hand_pos
+        
+        # 1. Gesture Labels (from Model)
+        if current_g == "ATAS": keys.overrides[pygame.K_UP] = True
+        elif current_g == "BAWAH": keys.overrides[pygame.K_DOWN] = True
+        elif current_g == "KIRI": keys.overrides[pygame.K_LEFT] = True
+        elif current_g == "KANAN": keys.overrides[pygame.K_RIGHT] = True
+        elif current_g in ["AMBIL", "ENTER"]: keys.overrides[pygame.K_RETURN] = True
+        
+        # 2. Universal "PISTOL" Gesture for Interaction
+        if current_g == "PISTOL":
+            keys.overrides[pygame.K_RETURN] = True
+            
+        # 3. Hand Motion Movement (Virtual Joystick)
+        # Allows moving without specific trained labels
+        if not inventory.active and not dialogue.active:
+            if h_pos[0] < 0.3: keys.overrides[pygame.K_LEFT] = True
+            if h_pos[0] > 0.7: keys.overrides[pygame.K_RIGHT] = True
+            if h_pos[1] < 0.3: keys.overrides[pygame.K_UP] = True
+            if h_pos[1] > 0.7: keys.overrides[pygame.K_DOWN] = True
         
         # Penanganan Baterai Habis
         if battery_level <= 0:
@@ -226,7 +311,18 @@ if __name__ == "__main__":
 
         if can_update:
             player.update(keys, map_size=map_size) # Hardened with map_size
-            mission.update(player, items, keys, effects, events)
+            signal = mission.update(player, items, keys, effects, events)
+            
+            # --- HANDLE MISSION SIGNALS (Mini-Games) ---
+            if signal == "START_RUNNER":
+                # Ensure MetroRunner is imported or defined. In code it was ShootingRange/MetroRunner
+                # Let's use the Ultimate versions since they are the ones imported.
+                from src.core.minigames.infinite_runner import MetroRunnerUltimate
+                minigame_manager.start_minigame(MetroRunnerUltimate)
+            elif signal == "START_SHOOTING":
+                from src.core.minigames.shooting_range import ShootingRangeUltimate
+                minigame_manager.start_minigame(ShootingRangeUltimate)
+
             for t in active_tacticals[:]:
                 t.update()
                 if not t.active: active_tacticals.remove(t)
@@ -242,8 +338,10 @@ if __name__ == "__main__":
                     if item.item_type in ["antenna", "chip", "fuel", "material", "card", "key", "note", "battery", "solvent"]:
                         item.collected = True
                         inventory.add_item(item.name, item.image)
-                        if item.item_type == "antenna": mission.states["radio_parts"]["Antena"] = True
-                        if item.item_type == "chip": mission.states["radio_parts"]["Chip"] = True
+                        # SAFE STATE UPDATES (Check if state exists in current mission)
+                        if "radio_parts" in mission.states:
+                            if item.item_type == "antenna": mission.states["radio_parts"]["Antena"] = True
+                            if item.item_type == "chip": mission.states["radio_parts"]["Chip"] = True
                         if item.item_type == "card": mission.states["has_access_card"] = True
                         if item.item_type == "key": mission.states["has_gate_key"] = True
                         if item.item_type == "solvent": mission.states["has_solvent"] = True
@@ -258,7 +356,10 @@ if __name__ == "__main__":
                     elif item.item_type == "photo":
                         item.collected = True; mission.states["has_photo"] = True; dialogue.show(["Foto keluargaku..."])
                     elif item.item_type == "safe" and mission.states.get("generator_on", False):
-                        item.collected = True; mission.states["radio_parts"]["Baterai"] = True; battery_level = 100; dialogue.show(["Mendapatkan baterai."])
+                        item.collected = True; 
+                        if "radio_parts" in mission.states:
+                            mission.states["radio_parts"]["Baterai"] = True
+                        battery_level = 100; dialogue.show(["Mendapatkan baterai."])
 
         if hasattr(mission.current_mission_logic, 'draw_ground'):
             mission.current_mission_logic.draw_ground(screen, camera)
@@ -304,5 +405,41 @@ if __name__ == "__main__":
             screen.blit(font_pixel.render(f"FLASHLIGHT: {int(battery_level)}%", True, (255, 255, 255)), (10, 25))
 
         hud.draw(screen, player, battery_level)
+
+        # Draw Quick Mission Switch buttons (Top Right)
+        if mission.current_mission_num in [1, 2, 3]:
+            mx, my = pygame.mouse.get_pos()
+            buttons = [
+                {"num": 1, "rect": pygame.Rect(520, 20, 80, 30), "text": "Misi 1"},
+                {"num": 2, "rect": pygame.Rect(610, 20, 80, 30), "text": "Misi 2"},
+                {"num": 3, "rect": pygame.Rect(700, 20, 80, 30), "text": "Misi 3"}
+            ]
+            for btn in buttons:
+                rect = btn["rect"]
+                is_hover = rect.collidepoint(mx, my)
+                is_active = (mission.current_mission_num == btn["num"])
+                
+                # Semi-transparent background
+                bg_surf = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+                if is_active:
+                    bg_color = (0, 100, 80, 180) # Dark teal/green for active
+                    border_color = (0, 255, 200) # Glowing cyan/teal border
+                elif is_hover:
+                    bg_color = (60, 60, 60, 200) # Slightly lighter grey for hover
+                    border_color = (255, 255, 0) # Yellow border on hover
+                else:
+                    bg_color = (30, 30, 30, 150) # Dark grey semi-transparent
+                    border_color = (150, 150, 150) # Grey border
+                
+                bg_surf.fill(bg_color)
+                screen.blit(bg_surf, (rect.x, rect.y))
+                pygame.draw.rect(screen, border_color, rect, 2, border_radius=4)
+                
+                # Text
+                text_color = (255, 255, 255) if not is_hover and not is_active else (255, 255, 0) if is_hover else (0, 255, 200)
+                text_surf = font_pixel.render(btn["text"], True, text_color)
+                text_rect = text_surf.get_rect(center=rect.center)
+                screen.blit(text_surf, text_rect)
+
         pygame.display.flip()
         clock.tick(60)

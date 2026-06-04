@@ -33,9 +33,10 @@ class MissionManager:
             import inspect
             sig = inspect.signature(self.current_mission_logic.update)
             if 'events' in sig.parameters:
-                self.current_mission_logic.update(player, items, keys, effects, events)
+                return self.current_mission_logic.update(player, items, keys, effects, events)
             else:
-                self.current_mission_logic.update(player, items, keys, effects)
+                return self.current_mission_logic.update(player, items, keys, effects)
+        return None
 
     def next_mission(self, player):
         self.current_mission_num += 1
@@ -50,6 +51,24 @@ class MissionManager:
             self.dialogue.show(PROLOGUE_M3)
             player.pos = [200, 200]
             self.journal.add_entry("MISI 3: The Sanctuary - Harapan Terakhir.")
+
+    def switch_to_mission(self, num, player):
+        self.current_mission_num = num
+        self.map_switched = True
+        if num == 1:
+            self.current_mission_logic = Mission1Logic(self.journal, self.dialogue)
+            player.pos = [400, 400]
+            self.journal.add_entry("Kembali ke MISI 1.")
+        elif num == 2:
+            self.current_mission_logic = Mission2Logic(self.journal, self.dialogue)
+            self.dialogue.show(METRO_START_DIALOGUE)
+            player.pos = [100, 100]
+            self.journal.add_entry("Kembali ke MISI 2.")
+        elif num == 3:
+            self.current_mission_logic = Mission3Logic(self.journal, self.dialogue)
+            self.dialogue.show(PROLOGUE_M3)
+            player.pos = [200, 200]
+            self.journal.add_entry("Kembali ke MISI 3.")
 
     def get_status_text(self, player):
         return self.current_mission_logic.get_status_text(player)

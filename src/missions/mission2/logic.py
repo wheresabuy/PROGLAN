@@ -67,13 +67,15 @@ class Mission2Logic:
 
         # Tahap 4: Final Escape
         if self.states["has_solvent"] and 2200 < player.pos[0] < 2400 and 1500 < player.pos[1] < 1700:
-            if keys[pygame.K_RETURN]: # Diubah dari K_f ke K_RETURN
+            if keys[pygame.K_RETURN]: 
                 self.phase = "COMPLETED"
                 self.dialogue.show([
                     "Menuangkan cairan pelarut ke lendir bio...",
                     "Lendir itu berteriak! Suaranya memekakkan telinga!",
                     "Pintu terbuka! Aku harus lari sebelum mereka mengepungku!"
                 ])
+                # TRIGGER MINI-GAME: Metro Runner
+                return "START_RUNNER"
 
     def draw_entities(self, screen, camera, player):
         self.zombie.draw(screen, camera)

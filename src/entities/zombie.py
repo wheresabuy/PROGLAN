@@ -5,7 +5,7 @@ from src.core.spritesheet import Spritesheet
 class ZombieNPC:
     def __init__(self, x, y):
         self.pos = [x, y]
-        self.sheet = Spritesheet("assets/enemies/zombie_new.png", 8, 8, scale=1.6)
+        self.sheet = Spritesheet("assets/enemies/zombie_new.png", 8, 8, scale=2.0)
         self.direction = 'down'
         self.state = 'stand'
         self.current_col = 0
