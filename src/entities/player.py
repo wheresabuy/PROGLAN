@@ -4,9 +4,19 @@ from src.core.spritesheet import Spritesheet
 class Player:
     def __init__(self, x, y):
         self.pos = [x, y]
+        # Base skin
         self.sheet = Spritesheet("FREE Mana Seed Character Base Demo 2.0/char_a_p1/char_a_p1_0bas_humn_v00.png", 8, 8, scale=2.0)
+        
+        # Clothing / Outfit
         self.clothing_sheet = Spritesheet("FREE Mana Seed Character Base Demo 2.0/char_a_p1/1out/char_a_p1_1out_fstr_v01.png", 8, 8, scale=2.0)
-        self.clothing_active = False
+        self.clothing_active = True # Start with default clothes active
+        
+        # Hair (Default: Dapper Hair Brown/v08)
+        self.hair_sheet = Spritesheet("FREE Mana Seed Character Base Demo 2.0/char_a_p1/4har/char_a_p1_4har_dap1_v08.png", 8, 8, scale=2.0)
+        
+        # Hat (Default: None)
+        self.hat_sheet = None
+        
         self.direction = 'down'
         self.state = 'stand'
         self.current_col = 0
@@ -54,6 +64,17 @@ class Player:
         if camera:
             draw_pos = camera.apply(self.pos)
             
+        # Layer 1: Skin Base
         screen.blit(self.sheet.get_frame(row, self.current_col), draw_pos)
-        if self.clothing_active:
+        
+        # Layer 2: Outfit / Clothing
+        if self.clothing_active and self.clothing_sheet:
             screen.blit(self.clothing_sheet.get_frame(row, self.current_col), draw_pos)
+            
+        # Layer 3: Hair
+        if self.hair_sheet:
+            screen.blit(self.hair_sheet.get_frame(row, self.current_col), draw_pos)
+            
+        # Layer 4: Hat
+        if self.hat_sheet:
+            screen.blit(self.hat_sheet.get_frame(row, self.current_col), draw_pos)

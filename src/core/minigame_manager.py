@@ -40,7 +40,8 @@ class MiniGameManager:
         self.last_result = result_data
         # Handle results (e.g., reward player based on score)
         if result_data:
-            self.main_engine.currency.add_bronze(result_data.get('score', 0) // 10)
+            earned = result_data.get('bronze_earned', result_data.get('score', 0) // 10)
+            self.main_engine.currency.add_bronze(earned)
 
     def update(self, dt):
         if self.active_game:
