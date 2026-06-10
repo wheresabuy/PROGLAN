@@ -98,7 +98,11 @@ class MiniGameManager:
     def start_minigame(self, cls): self.active_game = cls(self.main_engine.screen, self.main_engine.clock, self)
     def return_to_main(self, res):
         self.active_game, self.last_result = None, res
-        if res: self.main_engine.currency.add_bronze(res.get('bronze_earned', res.get('score', 0) // 10))
+        if res:
+            score = res.get('score', 0)
+            self.main_engine.currency.add_bronze(res.get('bronze_earned', score // 10))
+            if hasattr(self.main_engine, 'point_kill'):
+                self.main_engine.point_kill += score
     def update(self, dt):
         if self.active_game: self.active_game.update(dt)
     def draw(self):

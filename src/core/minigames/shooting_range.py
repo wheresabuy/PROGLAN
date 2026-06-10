@@ -112,6 +112,8 @@ class ShootingRangeUltimate(MiniGame):
             self._trigger_shot()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r: self.weapon.reload()
+            elif event.key in [pygame.K_ESCAPE, pygame.K_q]:
+                self.exit_game({'score': self.score, 'bronze_earned': self.bronze_earned})
 
     def update(self, dt):
         self.timer -= dt / 60.0

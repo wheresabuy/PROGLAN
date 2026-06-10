@@ -138,7 +138,7 @@ Berikut adalah tabel penjelasan baris demi baris dari kode sumber `main.py`:
 | **381-386** | `        for event in events: if event.type == pygame.QUIT: ...` | **LOGIKA EKSPLORASI SANCTUARY**: Tangani event penutupan game. |
 | **387-389** | `            if event.type == pygame.KEYDOWN: if dialogue.active: ... dialogue.next_message()` | Jika dialogue box aktif, menekan tombol `Enter` akan melangkah ke kalimat dialog selanjutnya. |
 | **390-392** | `                else: if event.key == pygame.K_RETURN: interact_pressed = True` | Jika dialog tertutup, menekan tombol `Enter` menyalakan status pemicu interaksi aksi (`interact_pressed = True`). |
-| **393-397** | `                    elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4]:` | Menekan tombol angka `1`-`4` untuk mengganti senjata aktif eksplorasi (1: UZI, 2: SCAR, 3: SHOTGUN, 4: SNIPER), memperbarui proxy minigame, dan memicu teks melayang visual. |
+| **393-397** | `                    elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4]:` | Menekan tombol angka `1`-`4` untuk mengganti senjata aktif eksplorasi. Mengharuskan akumulasi `point_kill` >= 10.000 untuk UZI, dan >= 20.000 untuk SCAR. Jika terkunci, tampilkan teks melayang peringatan berwarna merah. |
 | **398** | `        keys = InputProxy(pygame.key.get_pressed())` | Mengambil status tombol keyboard dibungkus input proxy. |
 | **399-402** | `        if current_g == "ATAS": keys.overrides[pygame.K_UP] = True ...` | **Simulasi Gerak Gestur ML**: Menerjemahkan gestur tangan ML (`ATAS`, `BAWAH`, `KIRI`, `KANAN`) ke tombol navigasi keyboard buatan. |
 | **403** | `        elif current_g in ["PISTOL", "AMBIL", "ENTER"]: interact_pressed = True` | Gestur `"AMBIL"` / `"PISTOL"` / `"ENTER"` secara otomatis memicu interaksi aksi eksplorasi. |
@@ -150,7 +150,7 @@ Berikut adalah tabel penjelasan baris demi baris dari kode sumber `main.py`:
 | **414-415** | `            elif signal == "OPEN_WARDROBE": wardrobe_active = True` | Buka menu pakaian jika pemain berinteraksi dengan loker. |
 | **416-417** | `            elif signal == "OPEN_UPGRADE_SHOP": upgrade_shop_active = True` | Buka menu upgrade senjata jika pemain berinteraksi dengan komputer stasiun upgrade. |
 | **418-422** | `        game_logic.draw_ground(screen, camera) ... hud.draw(screen, player, 100)` | Merender peta dasar, entitas Sanctuary (NPC, partikel, peti), sprite pemain, flash efek, dialog, dan HUD koin/nyawa di layar. |
-| **423-427** | `        status = game_logic.get_status_text() ...` | Merender panel petunjuk objektif misi kuning dan senjata siap pakai cyan di pojok kiri bawah layar game. |
+| **423-427** | `        status = game_logic.get_status_text() ...` | Merender panel HUD status bawah berbingkai cyan setinggi 75px, menampilkan teks status objektif, total `point_kill` & status kunci UZI/SCAR, serta senjata siap pakai. |
 | **428-432** | `        cam_surf = gesture_thread.frame ...` | Merender monitor kamera feed webcam kecil 160x120px beserta label nama gesturnya di pojok kanan atas layar Sanctuary. |
 | **433** | `        pygame.display.flip()` | Menyegarkan buffer grafis layar utama Pygame (*Double Buffering*). |
 | **434-436** | `if __name__ == "__main__": main()` | Memeriksa apakah file dijalankan langsung sebagai program utama, lalu mengeksekusi fungsi `main()`. |

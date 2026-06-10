@@ -121,7 +121,7 @@ Berikut adalah tabel penjelasan baris demi baris dari kode sumber `engine.py`:
 | **98** | `    def start_minigame(self, cls): self.active_game = cls(self.main_engine.screen, self.main_engine.clock, self)` | Memulai minigame baru dengan menginstansiasi kelas minigame yang diminta (`cls`). |
 | **99** | `    def return_to_main(self, res):` | Keluar dari minigame dan mengembalikan kontrol ke dunia Sanctuary utama. |
 | **100** | `        self.active_game, self.last_result = None, res` | Menghapus instansi minigame aktif dan menyimpan laporan hasil akhirnya. |
-| **101** | `        if res: self.main_engine.currency.add_bronze(res.get('bronze_earned', res.get('score', 0) // 10))` | Memberikan bonus uang koin perunggu ke saldo pemain berdasarkan hasil perolehan minigame. |
+| **101** | `        if res: ...` | Memberikan bonus uang koin perunggu ke saldo pemain dan mengakumulasikan skor minigame ke total `point_kill` pada engine proxy. |
 | **102** | `    def update(self, dt):` | Memperbarui logika minigame aktif di setiap frame. |
 | **103** | `        if self.active_game: self.active_game.update(dt)` | Jika sedang bermain minigame, panggil metode `.update()` minigame tersebut. |
 | **104** | `    def draw(self):` | Menggambar visual minigame aktif ke layar. |

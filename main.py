@@ -20,7 +20,7 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("monospace", 14)
     weapon_upgrades = {"damage_level": 0, "ammo_level": 0, "reload_level": 0, "firerate_level": 0}
-    selected_weapon = "SCAR"
+    selected_weapon = "SHOTGUN"
     player = Player(500, 450)
     camera = Camera(WIDTH, HEIGHT, 2560, 1440)
     dialogue = DialogueBox()
@@ -39,7 +39,8 @@ def main():
             self.weapon_upgrades = upg
             self.gesture_thread = gt
             self.selected_weapon = sw
-    engine_proxy = EngineProxy(screen, clock, currency, weapon_upgrades, gesture_thread, "SCAR")
+            self.point_kill = 0
+    engine_proxy = EngineProxy(screen, clock, currency, weapon_upgrades, gesture_thread, "SHOTGUN")
     minigame_manager = MiniGameManager(engine_proxy)
     smoothed_hx = WIDTH // 2
     smoothed_hy = HEIGHT // 2
@@ -392,9 +393,22 @@ def main():
                         interact_pressed = True
                     elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4]:
                         names = {pygame.K_1: "UZI", pygame.K_2: "SCAR", pygame.K_3: "SHOTGUN", pygame.K_4: "SNIPER"}
-                        selected_weapon = names[event.key]
-                        engine_proxy.selected_weapon = selected_weapon
-                        game_logic.floating_texts.append({'text': f"SIAP: {selected_weapon}", 'pos': [player.pos[0], player.pos[1] - 40], 'timer': 45, 'color': (0, 255, 255)})
+                        req_weapon = names[event.key]
+                        unlocked = True
+                        msg = ""
+                        if req_weapon == "UZI" and engine_proxy.point_kill < 10000:
+                            unlocked = False
+                            msg = f"UZI TERKUNCI! Butuh {10000 - engine_proxy.point_kill} poin"
+                        elif req_weapon == "SCAR" and engine_proxy.point_kill < 20000:
+                            unlocked = False
+                            msg = f"SCAR TERKUNCI! Butuh {20000 - engine_proxy.point_kill} poin"
+                        
+                        if unlocked:
+                            selected_weapon = req_weapon
+                            engine_proxy.selected_weapon = selected_weapon
+                            game_logic.floating_texts.append({'text': f"SIAP: {selected_weapon}", 'pos': [player.pos[0], player.pos[1] - 40], 'timer': 45, 'color': (0, 255, 255)})
+                        else:
+                            game_logic.floating_texts.append({'text': msg, 'pos': [player.pos[0], player.pos[1] - 40], 'timer': 60, 'color': (255, 50, 50)})
         keys = InputProxy(pygame.key.get_pressed())
         if current_g == "ATAS": keys.overrides[pygame.K_UP] = True
         elif current_g == "BAWAH": keys.overrides[pygame.K_DOWN] = True
@@ -421,10 +435,11 @@ def main():
         dialogue.draw(screen)
         hud.draw(screen, player, 100)
         status = game_logic.get_status_text()
-        pygame.draw.rect(screen, (10, 10, 15, 200), (10, HEIGHT-60, 480, 50), border_radius=5)
-        pygame.draw.rect(screen, (0, 255, 255, 100), (10, HEIGHT-60, 480, 50), 1, border_radius=5)
-        screen.blit(font.render(status, True, (255, 255, 0)), (15, HEIGHT-55))
-        screen.blit(font.render(f"SENJATA SIAP: {selected_weapon} (Tekan 1-4 untuk Ganti)", True, (0, 255, 255)), (15, HEIGHT-30))
+        pygame.draw.rect(screen, (10, 10, 15, 200), (10, HEIGHT-85, 480, 75), border_radius=5)
+        pygame.draw.rect(screen, (0, 255, 255, 100), (10, HEIGHT-85, 480, 75), 1, border_radius=5)
+        screen.blit(font.render(status, True, (255, 255, 0)), (15, HEIGHT-80))
+        screen.blit(font.render(f"POINT KILL: {engine_proxy.point_kill} | UZI (10k): {'BUKA' if engine_proxy.point_kill >= 10000 else 'KUNCI'} | SCAR (20k): {'BUKA' if engine_proxy.point_kill >= 20000 else 'KUNCI'}", True, (255, 215, 0)), (15, HEIGHT-58))
+        screen.blit(font.render(f"SENJATA SIAP: {selected_weapon} (Tekan 1-4 untuk Ganti)", True, (0, 255, 255)), (15, HEIGHT-35))
         cam_surf = gesture_thread.frame
         if cam_surf:
             screen.blit(cam_surf, (WIDTH - 180, 20))
