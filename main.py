@@ -19,6 +19,7 @@ def main():
     pygame.display.set_caption("City Under Attack - Sanctuary Defense")
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("monospace", 14)
+    weapon_upgrades = {"damage_level": 0, "ammo_level": 0, "reload_level": 0, "firerate_level": 0}
     player = Player(500, 450)
     camera = Camera(WIDTH, HEIGHT, 2560, 1440)
     dialogue = DialogueBox()
@@ -91,12 +92,7 @@ def main():
     upgrade_shop_active = False
     upgrade_shop_category = 0
     UPGRADE_COSTS = [100, 250, 500]
-    weapon_upgrades = {
-        "damage_level": 0,
-        "ammo_level": 0,
-        "reload_level": 0,
-        "firerate_level": 0
-    }
+    # weapon_upgrades defined early
     def update_player_wardrobe():
         from src.core.engine import Spritesheet
         player.sheet = Spritesheet(SKIN_OPTIONS[wardrobe_indices[0]], 8, 8, scale=2.0)
