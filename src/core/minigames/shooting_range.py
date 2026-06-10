@@ -61,7 +61,8 @@ class ShootingRangeUltimate(MiniGame):
             w_copy["ammo"] = int(w_copy["ammo"] * (1.0 + upgrades["ammo_level"] * 0.25))
             w_copy["delay"] = max(1, int(w_copy["delay"] * (1.0 - upgrades["firerate_level"] * 0.15)))
             self.weapons[w_key] = TacticalWeapon(w_copy, max(15, 60 - upgrades["reload_level"] * 15))
-        self.current_weapon_name, self.targets, self.particles, self.floating_texts, self.flash_timer, self.shake_v = "SCAR", [], [], [], 0, 0
+        self.current_weapon_name = getattr(self.manager.main_engine, "selected_weapon", "SCAR")
+        self.targets, self.particles, self.floating_texts, self.flash_timer, self.shake_v = [], [], [], 0, 0
         self.font_header, self.font_tactical = pygame.font.SysFont("monospace", 36, bold=True), pygame.font.SysFont("monospace", 18, bold=True)
         try:
             self.shoot_sfx = pygame.mixer.Sound("assets/suarapistol.mp3")
@@ -111,45 +112,23 @@ class ShootingRangeUltimate(MiniGame):
             self._trigger_shot()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r: self.weapon.reload()
-            elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4]:
-                names = {pygame.K_1: ("UZI", "MICRO UZI"), pygame.K_2: ("SCAR", "SCAR-H"), pygame.K_3: ("SHOTGUN", "SPAS-12"), pygame.K_4: ("SNIPER", "AWM")}
-                self.current_weapon_name, disp = names[event.key]
-                self.floating_texts.append({'text': f"SWITCHED TO {disp}", 'pos': [640 - 120, 360], 'timer': 35, 'color': (0, 255, 255)})
 
     def update(self, dt):
         self.timer -= dt / 60.0
         if self.timer <= 0: self.exit_game({'score': self.score, 'bronze_earned': self.bronze_earned})
         for w in self.weapons.values(): w.update()
         
-        # Gesture-based weapon switching and reloading
+        # Gesture-based reloading
         gt = getattr(self.manager.main_engine, "gesture_thread", None)
         if gt:
             g = gt.current_gesture
-            if g == "PISTOL" and self.current_weapon_name != "UZI":
-                self.current_weapon_name = "UZI"
-                self.floating_texts.append({'text': "SWITCHED TO MICRO UZI", 'pos': [640 - 120, 360], 'timer': 35, 'color': (0, 255, 255)})
-            elif g == "WEAPON2" and self.current_weapon_name != "SCAR":
-                self.current_weapon_name = "SCAR"
-                self.floating_texts.append({'text': "SWITCHED TO SCAR-H", 'pos': [640 - 120, 360], 'timer': 35, 'color': (0, 255, 255)})
-            elif g == "WEAPON3" and self.current_weapon_name != "SHOTGUN":
-                self.current_weapon_name = "SHOTGUN"
-                self.floating_texts.append({'text': "SWITCHED TO SPAS-12", 'pos': [640 - 120, 360], 'timer': 35, 'color': (0, 255, 255)})
-            elif g == "WEAPON4" and self.current_weapon_name != "SNIPER":
-                self.current_weapon_name = "SNIPER"
-                self.floating_texts.append({'text': "SWITCHED TO AWM SNIPER", 'pos': [640 - 120, 360], 'timer': 35, 'color': (0, 255, 255)})
-            elif g == "FIST" and not self.weapon.is_reloading and self.weapon.ammo < self.weapon.ammo_max:
+            if g == "FIST" and not self.weapon.is_reloading and self.weapon.ammo < self.weapon.ammo_max:
                 self.weapon.reload()
 
         is_auto = self.current_weapon_name in ["UZI", "SCAR"]
         if is_auto:
             mouse_hold = pygame.mouse.get_pressed()[0]
-            gesture_hold = False
-            if gt:
-                g = gt.current_gesture
-                if self.current_weapon_name == "UZI" and g in ["PISTOL", "ATAS"]:
-                    gesture_hold = True
-                elif self.current_weapon_name == "SCAR" and g in ["WEAPON2", "ATAS"]:
-                    gesture_hold = True
+            gesture_hold = gt and gt.current_gesture == "PISTOL"
             if (mouse_hold or gesture_hold) and self.weapon.can_shoot():
                 self._trigger_shot()
                 
@@ -239,12 +218,10 @@ class ShootingRangeUltimate(MiniGame):
         self.screen.blit(self.font_tactical.render(f"MONEY: +{self.bronze_earned} BRONZE", True, (0, 255, 100)), (self.width - 250, 45))
         self.screen.blit(self.font_tactical.render(f"SENJATA: {self.weapon.type['name']}", True, (255, 255, 0)), (20, 90))
         self.screen.blit(self.font_tactical.render(f"AMMO: {self.weapon.ammo}/{self.weapon.ammo_max}", True, (255, 255, 255)), (20, 115))
-        pygame.draw.rect(self.screen, (10, 10, 15, 200), (950, 600, 310, 110), border_radius=8)
-        pygame.draw.rect(self.screen, (0, 255, 255, 100), (950, 600, 310, 110), 1, border_radius=8)
-        self.screen.blit(self.font_tactical.render("SENJATA (Tekan 1-4 untuk Ganti):", True, (255, 255, 0)), (960, 610))
-        for idx, (key, w_name, w_disp) in enumerate([("1", "UZI", "UZI"), ("2", "SCAR", "SCAR"), ("3", "SHOTGUN", "SPAS"), ("4", "SNIPER", "AWM")]):
-            act = (self.current_weapon_name == w_name)
-            self.screen.blit(self.font_tactical.render(f"{'▶ ' if act else '  '}{key}: {w_disp}", True, (0, 255, 255) if act else (180, 180, 180)), (960 + (idx % 2) * 150, 640 + (idx // 2) * 25))
+        pygame.draw.rect(self.screen, (10, 10, 15, 200), (950, 600, 310, 80), border_radius=8)
+        pygame.draw.rect(self.screen, (0, 255, 255, 100), (950, 600, 310, 80), 1, border_radius=8)
+        self.screen.blit(self.font_tactical.render("SENJATA AKTIF (KUNCI):", True, (255, 255, 0)), (960, 615))
+        self.screen.blit(self.font_tactical.render(self.weapon.type["name"], True, (0, 255, 255)), (960, 645))
         mins, secs = int(self.timer)//60, int(self.timer)%60
         self.screen.blit(self.font_tactical.render(f"TIME LEFT: {mins:02d}:{secs:02d}", True, (255, 50, 50) if self.timer <= 20 else (255, 255, 255)), (self.width // 2 - 80, 30))
         boss = next((t for t in self.targets if t.get('is_boss', False)), None)

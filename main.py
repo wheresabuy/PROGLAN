@@ -20,6 +20,7 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("monospace", 14)
     weapon_upgrades = {"damage_level": 0, "ammo_level": 0, "reload_level": 0, "firerate_level": 0}
+    selected_weapon = "SCAR"
     player = Player(500, 450)
     camera = Camera(WIDTH, HEIGHT, 2560, 1440)
     dialogue = DialogueBox()
@@ -31,8 +32,15 @@ def main():
     gesture_thread = GestureThread(0)
     gesture_thread.start()
     class EngineProxy:
-        def __init__(self, s, c, cur, upg, gt): self.screen, self.clock, self.currency, self.weapon_upgrades, self.gesture_thread = s, c, cur, upg, gt
-    minigame_manager = MiniGameManager(EngineProxy(screen, clock, currency, weapon_upgrades, gesture_thread))
+        def __init__(self, s, c, cur, upg, gt, sw):
+            self.screen = s
+            self.clock = c
+            self.currency = cur
+            self.weapon_upgrades = upg
+            self.gesture_thread = gt
+            self.selected_weapon = sw
+    engine_proxy = EngineProxy(screen, clock, currency, weapon_upgrades, gesture_thread, "SCAR")
+    minigame_manager = MiniGameManager(engine_proxy)
     smoothed_hx = WIDTH // 2
     smoothed_hy = HEIGHT // 2
     SKIN_OPTIONS = [
@@ -382,6 +390,11 @@ def main():
                 else:
                     if event.key == pygame.K_RETURN:
                         interact_pressed = True
+                    elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4]:
+                        names = {pygame.K_1: "UZI", pygame.K_2: "SCAR", pygame.K_3: "SHOTGUN", pygame.K_4: "SNIPER"}
+                        selected_weapon = names[event.key]
+                        engine_proxy.selected_weapon = selected_weapon
+                        game_logic.floating_texts.append({'text': f"SIAP: {selected_weapon}", 'pos': [player.pos[0], player.pos[1] - 40], 'timer': 45, 'color': (0, 255, 255)})
         keys = InputProxy(pygame.key.get_pressed())
         if current_g == "ATAS": keys.overrides[pygame.K_UP] = True
         elif current_g == "BAWAH": keys.overrides[pygame.K_DOWN] = True
@@ -408,8 +421,10 @@ def main():
         dialogue.draw(screen)
         hud.draw(screen, player, 100)
         status = game_logic.get_status_text()
-        pygame.draw.rect(screen, (0,0,0,150), (10, HEIGHT-35, 450, 25))
-        screen.blit(font.render(status, True, (255, 255, 0)), (15, HEIGHT-30))
+        pygame.draw.rect(screen, (10, 10, 15, 200), (10, HEIGHT-60, 480, 50), border_radius=5)
+        pygame.draw.rect(screen, (0, 255, 255, 100), (10, HEIGHT-60, 480, 50), 1, border_radius=5)
+        screen.blit(font.render(status, True, (255, 255, 0)), (15, HEIGHT-55))
+        screen.blit(font.render(f"SENJATA SIAP: {selected_weapon} (Tekan 1-4 untuk Ganti)", True, (0, 255, 255)), (15, HEIGHT-30))
         cam_surf = gesture_thread.frame
         if cam_surf:
             screen.blit(cam_surf, (WIDTH - 180, 20))
