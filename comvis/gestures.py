@@ -89,6 +89,7 @@ class GestureThread(threading.Thread):
         self._last_y = 0.5
         self._recoil_triggered = False
         self._last_shot_time = 0
+        self.latest_frame = None
         self._lock = threading.Lock()
         self.running = True
         self.daemon = True
@@ -108,6 +109,9 @@ class GestureThread(threading.Thread):
                 self._recoil_triggered = False
                 return True
             return False
+    @property
+    def frame(self):
+        with self._lock: return self.latest_frame
     def run(self):
         try:
             cap = cv2.VideoCapture(self.camera_path)
@@ -119,11 +123,14 @@ class GestureThread(threading.Thread):
                 ret, frame = cap.read()
                 if not ret: break
                 try:
-                    rgb_frame = cv2.cvtColor(cv2.flip(frame, 1), cv2.COLOR_BGR2RGB)
+                    flipped_frame = cv2.flip(frame, 1)
+                    rgb_frame = cv2.cvtColor(flipped_frame, cv2.COLOR_BGR2RGB)
                     results = self.recognizer.hands.process(rgb_frame)
                     smoothed_gesture = "None"
                     if results.multi_hand_landmarks:
                         hand_landmarks = results.multi_hand_landmarks[0]
+                        self.recognizer.mp_draw.draw_landmarks(
+                            flipped_frame, hand_landmarks, self.recognizer.mp_hands.HAND_CONNECTIONS)
                         gesture = self.recognizer.recognize(hand_landmarks)
                         self._gesture_buffer.append(gesture)
                         smoothed_gesture = max(set(self._gesture_buffer), key=self._gesture_buffer.count)
@@ -142,6 +149,12 @@ class GestureThread(threading.Thread):
                         self._last_y = tip.y
                     else:
                         with self._lock: self._current_gesture = "None"
+                    import pygame
+                    small = cv2.resize(flipped_frame, (160, 120))
+                    rgb_small = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
+                    surf = pygame.surfarray.make_surface(rgb_small.swapaxes(0, 1))
+                    with self._lock:
+                        self.latest_frame = surf
                 except Exception as inner_e:
                     print(f"MediaPipe Processing Error: {inner_e}")
                     continue

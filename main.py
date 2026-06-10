@@ -362,6 +362,11 @@ def main():
                 minigame_manager.active_game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, {'button': 1}))
             minigame_manager.update(dt)
             minigame_manager.draw()
+            cam_surf = gesture_thread.frame
+            if cam_surf:
+                screen.blit(cam_surf, (WIDTH - 180, 90))
+                pygame.draw.rect(screen, (0, 255, 255), (WIDTH - 180, 90, 160, 120), 2)
+                screen.blit(font.render(f"GESTURE: {current_g}", True, (0, 255, 255)), (WIDTH - 180, 215))
             pygame.display.flip()
             continue
         for event in events:
@@ -404,6 +409,11 @@ def main():
         status = game_logic.get_status_text()
         pygame.draw.rect(screen, (0,0,0,150), (10, HEIGHT-35, 450, 25))
         screen.blit(font.render(status, True, (255, 255, 0)), (15, HEIGHT-30))
+        cam_surf = gesture_thread.frame
+        if cam_surf:
+            screen.blit(cam_surf, (WIDTH - 180, 20))
+            pygame.draw.rect(screen, (0, 255, 255), (WIDTH - 180, 20, 160, 120), 2)
+            screen.blit(font.render(f"GESTURE: {current_g}", True, (0, 255, 255)), (WIDTH - 180, 145))
         pygame.display.flip()
 if __name__ == "__main__":
     main()
