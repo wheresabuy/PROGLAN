@@ -5,15 +5,9 @@ class HUD:
         self.currency = currency
         self.font_main = pygame.font.SysFont("Arial", 18, bold=True)
         self.font_sub = pygame.font.SysFont("Arial", 12)
-        self.display_gold = currency.gold
-        self.display_silver = currency.silver
-        self.display_bronze = currency.bronze
-        self.CLR_BG = (20, 20, 20, 180)
-        self.CLR_ACCENT = (255, 215, 0)
-        self.CLR_WHITE = (240, 240, 240)
-        self.CLR_HEALTH = (231, 76, 60)
-        self.CLR_STAMINA = (46, 204, 113)
-        self.CLR_BATTERY = (52, 152, 219)
+        self.display_gold, self.display_silver, self.display_bronze = currency.gold, currency.silver, currency.bronze
+        self.CLR_BG, self.CLR_ACCENT, self.CLR_WHITE = (20, 20, 20, 180), (255, 215, 0), (240, 240, 240)
+        self.CLR_HEALTH, self.CLR_STAMINA, self.CLR_BATTERY = (231, 76, 60), (46, 204, 113), (52, 152, 219)
     def _draw_bar(self, screen, x, y, width, label, value, max_value, color):
         pygame.draw.rect(screen, (40, 40, 40), (x, y, width, 8), border_radius=4)
         fill_w = int((value / max_value) * width)
@@ -26,9 +20,7 @@ class HUD:
         bg_surf = pygame.Surface((panel_rect.width, panel_rect.height), pygame.SRCALPHA)
         pygame.draw.rect(bg_surf, self.CLR_BG, bg_surf.get_rect(), border_radius=10)
         screen.blit(bg_surf, (panel_rect.x, panel_rect.y))
-        self.display_gold += (self.currency.gold - self.display_gold) * 0.1
-        self.display_silver += (self.currency.silver - self.display_silver) * 0.1
-        self.display_bronze += (self.currency.bronze - self.display_bronze) * 0.1
+        self.display_gold += (self.currency.gold - self.display_gold) * 0.1; self.display_silver += (self.currency.silver - self.display_silver) * 0.1; self.display_bronze += (self.currency.bronze - self.display_bronze) * 0.1
         currencies = [
             ("G", int(self.display_gold), (255, 215, 0)),
             ("S", int(self.display_silver), (192, 192, 192)),

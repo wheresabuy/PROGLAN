@@ -43,12 +43,24 @@ class GestureRecognizerML:
         r_middle = d_middle / hand_scale
         r_ring = d_ring / hand_scale
         r_pinky = d_pinky / hand_scale
-        is_pistol = (r_index > 0.55) and (r_middle < 0.45) and (r_ring < 0.45) and (r_pinky < 0.45)
-        is_fist = (r_index < 0.4) and (r_middle < 0.4) and (r_ring < 0.4) and (r_pinky < 0.4)
-        if is_fist:
-            return "FIST"
-        if is_pistol:
+        is_i = r_index > 0.55
+        is_m = r_middle > 0.55
+        is_r = r_ring > 0.55
+        is_p = r_pinky > 0.55
+        not_i = r_index < 0.45
+        not_m = r_middle < 0.45
+        not_r = r_ring < 0.45
+        not_p = r_pinky < 0.45
+        if is_i and not_m and not_r and not_p:
             return "PISTOL"
+        if is_i and is_m and not_r and not_p:
+            return "WEAPON2"
+        if is_i and is_m and is_r and not_p:
+            return "WEAPON3"
+        if is_i and is_m and is_r and is_p:
+            return "WEAPON4"
+        if not_i and not_m and not_r and not_p:
+            return "FIST"
         pred_label = "None"
         if self.model is not None:
             data = []
@@ -145,8 +157,8 @@ class GestureThread(threading.Thread):
                         gesture = self.recognizer.recognize(hand_landmarks)
                         self._gesture_buffer.append(gesture)
                         smoothed_gesture = max(set(self._gesture_buffer), key=self._gesture_buffer.count)
-                        is_shooting_g = smoothed_gesture in ["PISTOL", "ATAS"]
-                        was_shooting_g = self._prev_gesture in ["PISTOL", "ATAS"]
+                        is_shooting_g = smoothed_gesture in ["PISTOL", "WEAPON2", "WEAPON3", "WEAPON4", "ATAS"]
+                        was_shooting_g = self._prev_gesture in ["PISTOL", "WEAPON2", "WEAPON3", "WEAPON4", "ATAS"]
                         transition_to_shoot = is_shooting_g and not was_shooting_g
                         self._prev_gesture = smoothed_gesture
                         tip = hand_landmarks.landmark[8]

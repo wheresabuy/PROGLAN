@@ -121,11 +121,35 @@ class ShootingRangeUltimate(MiniGame):
         if self.timer <= 0: self.exit_game({'score': self.score, 'bronze_earned': self.bronze_earned})
         for w in self.weapons.values(): w.update()
         
+        # Gesture-based weapon switching and reloading
+        gt = getattr(self.manager.main_engine, "gesture_thread", None)
+        if gt:
+            g = gt.current_gesture
+            if g == "PISTOL" and self.current_weapon_name != "UZI":
+                self.current_weapon_name = "UZI"
+                self.floating_texts.append({'text': "SWITCHED TO MICRO UZI", 'pos': [640 - 120, 360], 'timer': 35, 'color': (0, 255, 255)})
+            elif g == "WEAPON2" and self.current_weapon_name != "SCAR":
+                self.current_weapon_name = "SCAR"
+                self.floating_texts.append({'text': "SWITCHED TO SCAR-H", 'pos': [640 - 120, 360], 'timer': 35, 'color': (0, 255, 255)})
+            elif g == "WEAPON3" and self.current_weapon_name != "SHOTGUN":
+                self.current_weapon_name = "SHOTGUN"
+                self.floating_texts.append({'text': "SWITCHED TO SPAS-12", 'pos': [640 - 120, 360], 'timer': 35, 'color': (0, 255, 255)})
+            elif g == "WEAPON4" and self.current_weapon_name != "SNIPER":
+                self.current_weapon_name = "SNIPER"
+                self.floating_texts.append({'text': "SWITCHED TO AWM SNIPER", 'pos': [640 - 120, 360], 'timer': 35, 'color': (0, 255, 255)})
+            elif g == "FIST" and not self.weapon.is_reloading and self.weapon.ammo < self.weapon.ammo_max:
+                self.weapon.reload()
+
         is_auto = self.current_weapon_name in ["UZI", "SCAR"]
         if is_auto:
             mouse_hold = pygame.mouse.get_pressed()[0]
-            gt = getattr(self.manager.main_engine, "gesture_thread", None)
-            gesture_hold = gt and gt.current_gesture in ["PISTOL", "ATAS"]
+            gesture_hold = False
+            if gt:
+                g = gt.current_gesture
+                if self.current_weapon_name == "UZI" and g in ["PISTOL", "ATAS"]:
+                    gesture_hold = True
+                elif self.current_weapon_name == "SCAR" and g in ["WEAPON2", "ATAS"]:
+                    gesture_hold = True
             if (mouse_hold or gesture_hold) and self.weapon.can_shoot():
                 self._trigger_shot()
                 
