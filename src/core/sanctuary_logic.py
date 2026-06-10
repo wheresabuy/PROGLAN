@@ -214,6 +214,12 @@ class SanctuaryLogic:
             if interact_pressed:
                 signal_to_return = "OPEN_WARDROBE"
 
+        # --- 6. WEAPON UPGRADE LOCKER INTERACTION ---
+        upg_dist = math.hypot(px - 1500, py - 850)
+        if upg_dist < 60:
+            if interact_pressed:
+                signal_to_return = "OPEN_UPGRADE_SHOP"
+
         return signal_to_return
 
     def draw_ground(self, screen, camera):
@@ -277,6 +283,29 @@ class SanctuaryLogic:
                 w_pos = camera.apply((145, 875))
                 hint = self.font.render("PRESS ENTER TO USE WARDROBE", True, (0, 255, 255))
                 screen.blit(hint, (w_pos[0] - hint.get_width() // 2, w_pos[1] - 25))
+
+        # Draw Weapon Upgrade Locker / Terminal
+        upg_pos = camera.apply((1500, 850))
+        # Draw a metallic grey box with cyan outlines (futuristic terminal)
+        pygame.draw.rect(screen, (50, 60, 70), (upg_pos[0] - 20, upg_pos[1] - 30, 40, 60), border_radius=5)
+        pygame.draw.rect(screen, (0, 255, 255), (upg_pos[0] - 20, upg_pos[1] - 30, 40, 60), 2, border_radius=5)
+        # Small screen on terminal
+        pygame.draw.rect(screen, (10, 20, 30), (upg_pos[0] - 14, upg_pos[1] - 22, 28, 20))
+        pygame.draw.rect(screen, (0, 200, 200), (upg_pos[0] - 14, upg_pos[1] - 22, 28, 20), 1)
+        # Pulse screen glow
+        pulse = (pygame.time.get_ticks() // 400) % 2
+        screen_color = (0, 255, 120) if pulse else (0, 150, 80)
+        pygame.draw.circle(screen, screen_color, (upg_pos[0] - 5, upg_pos[1] - 12), 2)
+        pygame.draw.circle(screen, (255, 50, 50), (upg_pos[0] + 5, upg_pos[1] - 12), 2)
+        # Keyboard/Console ledge
+        pygame.draw.rect(screen, (30, 35, 40), (upg_pos[0] - 22, upg_pos[1] - 2, 44, 8), border_radius=2)
+
+        # Draw Weapon Upgrade prompt if player is close
+        if player:
+            upg_dist = math.hypot(player.pos[0] - 1500, player.pos[1] - 850)
+            if upg_dist < 60:
+                hint = self.font.render("PRESS ENTER TO UPGRADE WEAPONS", True, (0, 255, 255))
+                screen.blit(hint, (upg_pos[0] - hint.get_width() // 2, upg_pos[1] - 55))
 
         # Draw NPCs
         for npc in self.npcs:

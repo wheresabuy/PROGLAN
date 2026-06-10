@@ -42,8 +42,8 @@ def main():
     
     # Manager untuk Minigame (Shooting Mode)
     class EngineProxy: 
-        def __init__(self, s, c, cur): self.screen, self.clock, self.currency = s, c, cur
-    minigame_manager = MiniGameManager(EngineProxy(screen, clock, currency))
+        def __init__(self, s, c, cur, upg): self.screen, self.clock, self.currency, self.weapon_upgrades = s, c, cur, upg
+    minigame_manager = MiniGameManager(EngineProxy(screen, clock, currency, weapon_upgrades))
 
     # 3. Inisialisasi Computer Vision (Gestures)
     gesture_thread = GestureThread(0)
@@ -111,6 +111,17 @@ def main():
     wardrobe_active = False
     wardrobe_category = 0
     wardrobe_indices = [0, 3, 23, 0] # default indices: Skin v00, Forester Blue, Dapper Brown, No Hat
+
+    # --- WEAPON UPGRADE kustomisasi data ---
+    upgrade_shop_active = False
+    upgrade_shop_category = 0
+    UPGRADE_COSTS = [100, 250, 500]
+    weapon_upgrades = {
+        "damage_level": 0,
+        "ammo_level": 0,
+        "reload_level": 0,
+        "firerate_level": 0
+    }
 
     def update_player_wardrobe():
         from src.core.spritesheet import Spritesheet
@@ -297,6 +308,155 @@ def main():
             pygame.display.flip()
             continue
 
+        # --- WEAPON UPGRADE INTERACTION OVERLAY ---
+        if upgrade_shop_active:
+            for event in events:
+                if event.type == pygame.QUIT:
+                    gesture_thread.stop()
+                    gesture_thread.join(timeout=1.0)
+                    pygame.quit(); sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP:
+                        upgrade_shop_category = (upgrade_shop_category - 1) % 4
+                    elif event.key == pygame.K_DOWN:
+                        upgrade_shop_category = (upgrade_shop_category + 1) % 4
+                    elif event.key == pygame.K_RETURN:
+                        cat_key = ["damage_level", "ammo_level", "reload_level", "firerate_level"][upgrade_shop_category]
+                        current_lvl = weapon_upgrades[cat_key]
+                        if current_lvl < 3:
+                            cost = UPGRADE_COSTS[current_lvl]
+                            if currency.deduct_bronze(cost):
+                                weapon_upgrades[cat_key] += 1
+                                effects.flash_timer = 4
+                    elif event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE, pygame.K_q]:
+                        upgrade_shop_active = False
+
+            # Rendering while in upgrade shop (keep background visible)
+            game_logic.draw_ground(screen, camera)
+            game_logic.draw_entities(screen, camera, player)
+            player.draw(screen, camera)
+            effects.draw_flash(screen)
+            dialogue.draw(screen)
+            hud.draw(screen, player, 100)
+            
+            # Draw overlay box in the center of the screen
+            overlay_w, overlay_h = 750, 450
+            ox = (WIDTH - overlay_w) // 2
+            oy = (HEIGHT - overlay_h) // 2
+            
+            # Semi-transparent dark background
+            s = pygame.Surface((overlay_w, overlay_h), pygame.SRCALPHA)
+            pygame.draw.rect(s, (15, 10, 25, 240), (0, 0, overlay_w, overlay_h), border_radius=15)
+            pygame.draw.rect(s, (255, 50, 100, 180), (0, 0, overlay_w, overlay_h), 2, border_radius=15)
+            screen.blit(s, (ox, oy))
+            
+            # Fonts
+            font_title = pygame.font.SysFont("Arial", 22, bold=True)
+            font_body = pygame.font.SysFont("Arial", 16, bold=True)
+            font_option = pygame.font.SysFont("Arial", 14)
+            font_hint = pygame.font.SysFont("Arial", 13)
+            
+            # Title
+            title_surf = font_title.render("STASIUN UPGRADE SENJATA (WEAPON UPGRADES)", True, (255, 50, 100))
+            screen.blit(title_surf, (ox + 30, oy + 20))
+            
+            # Divider line
+            pygame.draw.line(screen, (120, 30, 50), (ox + 30, oy + 55), (ox + overlay_w - 30, oy + 55), 2)
+            
+            # Draw player current money in the panel
+            total_money = currency.get_total_bronze()
+            money_txt = f"TOTAL UANG: {total_money} Bronze ({currency.gold}G, {currency.silver}S, {currency.bronze}B)"
+            money_surf = font_body.render(money_txt, True, (255, 215, 0))
+            screen.blit(money_surf, (ox + overlay_w - 30 - money_surf.get_width(), oy + 23))
+            
+            # Left panel: Weapon illustration/preview
+            pygame.draw.rect(screen, (30, 20, 40), (ox + 30, oy + 70, 200, 290), border_radius=10)
+            pygame.draw.rect(screen, (255, 50, 100, 80), (ox + 30, oy + 70, 200, 290), 1, border_radius=10)
+            
+            wpn_lbl = font_body.render("STATUS SENJATA", True, (255, 255, 255))
+            screen.blit(wpn_lbl, (ox + 30 + (200 - wpn_lbl.get_width()) // 2, oy + 85))
+            
+            # Simple gun drawing in preview box
+            gun_ox, gun_oy = ox + 130, oy + 220
+            # Slide
+            pygame.draw.rect(screen, (100, 100, 110), (gun_ox - 60, gun_oy - 15, 100, 25), border_radius=3)
+            pygame.draw.rect(screen, (255, 50, 100), (gun_ox - 60, gun_oy - 15, 100, 2))
+            # Grip
+            pygame.draw.rect(screen, (60, 60, 65), (gun_ox + 10, gun_oy + 10, 25, 55), border_radius=5)
+            # Scope
+            pygame.draw.rect(screen, (40, 40, 45), (gun_ox - 20, gun_oy - 25, 30, 10))
+            pygame.draw.circle(screen, (255, 0, 0), (gun_ox + 10, gun_oy - 20), 2)
+            
+            # Render stats breakdown
+            stat_y = oy + 280
+            stats_text = [
+                f"Dmg: {40 + weapon_upgrades['damage_level']*15}",
+                f"Mag: {30 + weapon_upgrades['ammo_level']*10} Peluru",
+                f"Reload: {(60 - weapon_upgrades['reload_level']*15)/60:.2f}s",
+                f"Rate: {60 / max(2, 5 - weapon_upgrades['firerate_level']):.1f} r/s"
+            ]
+            for i, st in enumerate(stats_text):
+                st_surf = font_option.render(st, True, (200, 200, 220))
+                screen.blit(st_surf, (ox + 50, stat_y + i * 20))
+            
+            # Right panel: Upgrade Items
+            categories_info = [
+                ("DAMAGE (Daya Hancur)", "damage_level", lambda lvl: f"{40 + lvl*15} -> {40 + (lvl+1)*15 if lvl < 3 else 'MAX'}", "+15 Damage"),
+                ("MAGAZINE (Kapasitas)", "ammo_level", lambda lvl: f"{30 + lvl*10} -> {30 + (lvl+1)*10 if lvl < 3 else 'MAX'}", "+10 Peluru"),
+                ("RELOAD SPEED (Isi Peluru)", "reload_level", lambda lvl: f"{(60 - lvl*15)/60:.2f}s -> {(60 - (lvl+1)*15)/60 if lvl < 3 else 0:.2f}s", "Isi Ulang Lebih Cepat"),
+                ("FIRE RATE (Kecepatan Tembak)", "firerate_level", lambda lvl: f"{60 / max(2, 5 - lvl):.1f}/s -> {60 / max(2, 5 - (lvl+1)) if lvl < 3 else 0:.1f}/s", "Tembak Lebih Cepat")
+            ]
+            
+            for idx, (cat_name, cat_key, val_func, bonus_desc) in enumerate(categories_info):
+                row_y = oy + 70 + (idx * 70)
+                row_h = 60
+                lvl = weapon_upgrades[cat_key]
+                is_selected = (upgrade_shop_category == idx)
+                
+                row_s = pygame.Surface((460, row_h), pygame.SRCALPHA)
+                if is_selected:
+                    pygame.draw.rect(row_s, (255, 50, 100, 45), (0, 0, 460, row_h), border_radius=8)
+                    pygame.draw.rect(row_s, (255, 50, 100, 180), (0, 0, 460, row_h), 2, border_radius=8)
+                    cat_color = (255, 80, 130)
+                    txt_color = (255, 255, 255)
+                else:
+                    pygame.draw.rect(row_s, (40, 30, 50, 120), (0, 0, 460, row_h), border_radius=8)
+                    pygame.draw.rect(row_s, (150, 100, 120, 50), (0, 0, 460, row_h), 1, border_radius=8)
+                    cat_color = (200, 170, 180)
+                    txt_color = (180, 180, 180)
+                screen.blit(row_s, (ox + 260, row_y))
+                
+                title_txt = f"{cat_name}  [Lv {lvl}/3]"
+                lbl_surf = font_body.render(title_txt, True, cat_color)
+                screen.blit(lbl_surf, (ox + 275, row_y + 8))
+                
+                if lvl < 3:
+                    cost = UPGRADE_COSTS[lvl]
+                    has_enough = (total_money >= cost)
+                    cost_color = (100, 255, 100) if has_enough else (255, 100, 100)
+                    
+                    desc_txt = f"{val_func(lvl)} ({bonus_desc})"
+                    desc_surf = font_option.render(desc_txt, True, txt_color)
+                    screen.blit(desc_surf, (ox + 275, row_y + 32))
+                    
+                    cost_txt = f"BIAYA: {cost} Bronze"
+                    cost_surf = font_body.render(cost_txt, True, cost_color)
+                    screen.blit(cost_surf, (ox + 690 - cost_surf.get_width(), row_y + 18))
+                else:
+                    desc_txt = f"SELESAI UPGRADE (MAX)"
+                    desc_surf = font_body.render(desc_txt, True, (0, 255, 120))
+                    screen.blit(desc_surf, (ox + 275, row_y + 32))
+                    
+            # Footer instructions
+            pygame.draw.line(screen, (120, 30, 50), (ox + 30, oy + 380), (ox + overlay_w - 30, oy + 380), 1)
+            
+            help_text = "▲/▼ Pilih Upgrade   |   ENTER Beli Peningkatan   |   ESC/BACKSPACE/Q Keluar"
+            help_surf = font_hint.render(help_text, True, (0, 255, 120))
+            screen.blit(help_surf, (ox + (overlay_w - help_surf.get_width()) // 2, oy + 395))
+            
+            pygame.display.flip()
+            continue
+
         interact_pressed = False
 
         # --- MODE MINIGAME (Shooting) ---
@@ -366,6 +526,8 @@ def main():
                 currency.add_bronze(150)
             elif signal == "OPEN_WARDROBE":
                 wardrobe_active = True
+            elif signal == "OPEN_UPGRADE_SHOP":
+                upgrade_shop_active = True
 
         # Rendering
         game_logic.draw_ground(screen, camera)
