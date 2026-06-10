@@ -14,11 +14,6 @@ Gunakan menu di bawah ini untuk langsung membuka dokumen penjelasan untuk setiap
 ## 🧠 2. Modul Computer Vision (Gesture Kamera)
 * ✋ **Gestures Thread Tracker**: [gestures.md](./dokumentasi/gestures.md) *(Thread pelacakan landmark tangan MediaPipe & klasifikasi gestur real-time)*
 * 🔫 **Visualisasi Logika Pistol**: [visualisasi_logika_pistol.md](./dokumentasi/visualisasi_logika_pistol.md) *(Visualisasi geometris dan logika pemicu tembakan recoil)*
-* ↔️ **Motion/Swipe Detector**: [motion_detect.md](./dokumentasi/motion_detect.md) *(Mendeteksi gerakan sapuan tangan swipe kiri/kanan/atas/bawah)*
-* 💾 **Data Collector**: [train_data.md](./dokumentasi/train_data.md) *(Skrip perekaman dataset koordinat tangan ke file CSV)*
-* 🤖 **Model Trainer**: [train_model.md](./dokumentasi/train_model.md) *(Melatih model Random Forest Classifier untuk mengenali gestur tangan)*
-* 🧹 **Reset Dataset**: [reset_data.md](./dokumentasi/reset_data.md) *(Membersihkan data rekaman gestur lama)*
-
 
 ---
 
