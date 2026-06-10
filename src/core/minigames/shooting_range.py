@@ -71,41 +71,44 @@ class ShootingRangeUltimate(MiniGame):
     @property
     def weapon(self): return self.weapons[self.current_weapon_name]
 
+    def _trigger_shot(self):
+        self.weapon.shoot(); self.flash_timer, self.shake_v = 5, self.weapon.type["recoil"]
+        if self.shoot_sfx: self.shoot_sfx.play()
+        hit = False
+        for t in self.targets:
+            hx, hy, hr = t['pos'][0], t['pos'][1] - int(t['size'] * 0.5), int(t['size'] * 0.4)
+            dist_head = math.hypot(self.crosshair[0] - hx, self.crosshair[1] - hy)
+            dist_body = math.hypot(self.crosshair[0] - t['pos'][0], self.crosshair[1] - t['pos'][1])
+            if dist_head < hr or dist_body < t['size']:
+                is_hs = dist_head < hr
+                dmg = self.weapon.type["damage"] * (2 if is_hs else 1)
+                self.floating_texts.append({'text': f"CRITICAL! -{dmg}" if is_hs else f"-{dmg}", 'pos': [self.crosshair[0], self.crosshair[1] - 15], 'timer': 25 if is_hs else 20, 'color': (255, 215, 0) if is_hs else (220, 220, 220)})
+                for _ in range(15 if is_hs else 8): self.particles.append(Particle(hx if is_hs else t['pos'][0], hy if is_hs else t['pos'][1], (255, 50, 50) if is_hs else PixelPalette.BLOOD, (3, 6) if is_hs else (2, 5)))
+                t['hp'] -= dmg
+                if t['hp'] <= 0:
+                    self.kills += 1; is_boss = t.get('is_boss', False)
+                    mult = 1.0 if self.kills < 10 else 1.5 if self.kills < 25 else 2.0 if self.kills < 50 else 3.0 if self.kills < 80 else 5.0
+                    if is_boss:
+                        self.score += 1000; self.bronze_earned += 200; self.timer = min(180.0, self.timer + 20.0); self.shake_v = 40
+                        self.floating_texts.append({'text': "BOSS DEFEATED! +1000 PTS (+200B)", 'pos': [t['pos'][0] - 120, t['pos'][1] - 40], 'timer': 75, 'color': (255, 0, 128)})
+                        self.floating_texts.append({'text': "+20.0s BONUS TIME", 'pos': [t['pos'][0] - 50, t['pos'][1] - 70], 'timer': 60, 'color': (0, 255, 255)})
+                        for _ in range(40): self.particles.append(Particle(t['pos'][0], t['pos'][1], (255, 50, 50), (4, 9)))
+                    else:
+                        self.headshots += 1 if is_hs else 0
+                        self.score += 150 if is_hs else 100
+                        payout = int((15 if is_hs else 10) * mult)
+                        self.bronze_earned += payout; self.timer = min(180.0, self.timer + (4.0 if is_hs else 2.5))
+                        self.floating_texts.append({'text': f"+{'150 HEADSHOT' if is_hs else '100'} KILL (+{payout}B)", 'pos': [t['pos'][0] - 50, t['pos'][1] - 40], 'timer': 45 if is_hs else 35, 'color': (255, 215, 0) if is_hs else (100, 255, 100)})
+                        self.floating_texts.append({'text': f"+{4.0 if is_hs else 2.5:.1f}s TIME", 'pos': [t['pos'][0] + 10, t['pos'][1] - 65], 'timer': 30, 'color': (0, 255, 255)})
+                    t['active'] = False
+                hit = True; break
+        if not hit:
+            for _ in range(3): self.particles.append(Particle(self.crosshair[0], self.crosshair[1], (200, 200, 200), (2, 4)))
+
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION: self.crosshair = list(event.pos)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.weapon.can_shoot():
-            self.weapon.shoot(); self.flash_timer, self.shake_v = 5, self.weapon.type["recoil"]
-            if self.shoot_sfx: self.shoot_sfx.play()
-            hit = False
-            for t in self.targets:
-                hx, hy, hr = t['pos'][0], t['pos'][1] - int(t['size'] * 0.5), int(t['size'] * 0.4)
-                dist_head = math.hypot(self.crosshair[0] - hx, self.crosshair[1] - hy)
-                dist_body = math.hypot(self.crosshair[0] - t['pos'][0], self.crosshair[1] - t['pos'][1])
-                if dist_head < hr or dist_body < t['size']:
-                    is_hs = dist_head < hr
-                    dmg = self.weapon.type["damage"] * (2 if is_hs else 1)
-                    self.floating_texts.append({'text': f"CRITICAL! -{dmg}" if is_hs else f"-{dmg}", 'pos': [self.crosshair[0], self.crosshair[1] - 15], 'timer': 25 if is_hs else 20, 'color': (255, 215, 0) if is_hs else (220, 220, 220)})
-                    for _ in range(15 if is_hs else 8): self.particles.append(Particle(hx if is_hs else t['pos'][0], hy if is_hs else t['pos'][1], (255, 50, 50) if is_hs else PixelPalette.BLOOD, (3, 6) if is_hs else (2, 5)))
-                    t['hp'] -= dmg
-                    if t['hp'] <= 0:
-                        self.kills += 1; is_boss = t.get('is_boss', False)
-                        mult = 1.0 if self.kills < 10 else 1.5 if self.kills < 25 else 2.0 if self.kills < 50 else 3.0 if self.kills < 80 else 5.0
-                        if is_boss:
-                            self.score += 1000; self.bronze_earned += 200; self.timer = min(180.0, self.timer + 20.0); self.shake_v = 40
-                            self.floating_texts.append({'text': "BOSS DEFEATED! +1000 PTS (+200B)", 'pos': [t['pos'][0] - 120, t['pos'][1] - 40], 'timer': 75, 'color': (255, 0, 128)})
-                            self.floating_texts.append({'text': "+20.0s BONUS TIME", 'pos': [t['pos'][0] - 50, t['pos'][1] - 70], 'timer': 60, 'color': (0, 255, 255)})
-                            for _ in range(40): self.particles.append(Particle(t['pos'][0], t['pos'][1], (255, 50, 50), (4, 9)))
-                        else:
-                            self.headshots += 1 if is_hs else 0
-                            self.score += 150 if is_hs else 100
-                            payout = int((15 if is_hs else 10) * mult)
-                            self.bronze_earned += payout; self.timer = min(180.0, self.timer + (4.0 if is_hs else 2.5))
-                            self.floating_texts.append({'text': f"+{'150 HEADSHOT' if is_hs else '100'} KILL (+{payout}B)", 'pos': [t['pos'][0] - 50, t['pos'][1] - 40], 'timer': 45 if is_hs else 35, 'color': (255, 215, 0) if is_hs else (100, 255, 100)})
-                            self.floating_texts.append({'text': f"+{4.0 if is_hs else 2.5:.1f}s TIME", 'pos': [t['pos'][0] + 10, t['pos'][1] - 65], 'timer': 30, 'color': (0, 255, 255)})
-                        t['active'] = False
-                    hit = True; break
-            if not hit:
-                for _ in range(3): self.particles.append(Particle(self.crosshair[0], self.crosshair[1], (200, 200, 200), (2, 4)))
+            self._trigger_shot()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r: self.weapon.reload()
             elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4]:
@@ -117,6 +120,15 @@ class ShootingRangeUltimate(MiniGame):
         self.timer -= dt / 60.0
         if self.timer <= 0: self.exit_game({'score': self.score, 'bronze_earned': self.bronze_earned})
         for w in self.weapons.values(): w.update()
+        
+        is_auto = self.current_weapon_name in ["UZI", "SCAR"]
+        if is_auto:
+            mouse_hold = pygame.mouse.get_pressed()[0]
+            gt = getattr(self.manager.main_engine, "gesture_thread", None)
+            gesture_hold = gt and gt.current_gesture == "PISTOL"
+            if (mouse_hold or gesture_hold) and self.weapon.can_shoot():
+                self._trigger_shot()
+                
         if self.flash_timer > 0: self.flash_timer -= 1
         if self.shake_v > 0: self.shake_v *= 0.85
         next_boss = 15 * (self.boss_spawned_count + 1)

@@ -28,11 +28,11 @@ def main():
     effects = VisualEffects(WIDTH, HEIGHT)
     game_logic = SanctuaryLogic(dialogue)
     dialogue.box_rect = pygame.Rect(100, 500, 1080, 150)
-    class EngineProxy:
-        def __init__(self, s, c, cur, upg): self.screen, self.clock, self.currency, self.weapon_upgrades = s, c, cur, upg
-    minigame_manager = MiniGameManager(EngineProxy(screen, clock, currency, weapon_upgrades))
     gesture_thread = GestureThread(0)
     gesture_thread.start()
+    class EngineProxy:
+        def __init__(self, s, c, cur, upg, gt): self.screen, self.clock, self.currency, self.weapon_upgrades, self.gesture_thread = s, c, cur, upg, gt
+    minigame_manager = MiniGameManager(EngineProxy(screen, clock, currency, weapon_upgrades, gesture_thread))
     smoothed_hx = WIDTH // 2
     smoothed_hy = HEIGHT // 2
     SKIN_OPTIONS = [
