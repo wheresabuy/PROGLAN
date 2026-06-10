@@ -125,7 +125,7 @@ class ShootingRangeUltimate(MiniGame):
         if is_auto:
             mouse_hold = pygame.mouse.get_pressed()[0]
             gt = getattr(self.manager.main_engine, "gesture_thread", None)
-            gesture_hold = gt and gt.current_gesture == "PISTOL"
+            gesture_hold = gt and gt.current_gesture in ["PISTOL", "ATAS"]
             if (mouse_hold or gesture_hold) and self.weapon.can_shoot():
                 self._trigger_shot()
                 

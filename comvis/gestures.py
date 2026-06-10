@@ -32,6 +32,23 @@ class GestureRecognizerML:
             print("Peringatan: Model belum dilatih. Gunakan train_model.py!")
     def recognize(self, hand_landmarks):
         lm = hand_landmarks.landmark
+        hand_scale = math.hypot(lm[9].x - lm[0].x, lm[9].y - lm[0].y)
+        if hand_scale < 0.01:
+            hand_scale = 0.01
+        d_index = math.hypot(lm[8].x - lm[5].x, lm[8].y - lm[5].y)
+        d_middle = math.hypot(lm[12].x - lm[9].x, lm[12].y - lm[9].y)
+        d_ring = math.hypot(lm[16].x - lm[13].x, lm[16].y - lm[13].y)
+        d_pinky = math.hypot(lm[20].x - lm[17].x, lm[20].y - lm[17].y)
+        r_index = d_index / hand_scale
+        r_middle = d_middle / hand_scale
+        r_ring = d_ring / hand_scale
+        r_pinky = d_pinky / hand_scale
+        is_pistol = (r_index > 0.55) and (r_middle < 0.45) and (r_ring < 0.45) and (r_pinky < 0.45)
+        is_fist = (r_index < 0.4) and (r_middle < 0.4) and (r_ring < 0.4) and (r_pinky < 0.4)
+        if is_fist:
+            return "FIST"
+        if is_pistol:
+            return "PISTOL"
         pred_label = "None"
         if self.model is not None:
             data = []
@@ -45,13 +62,6 @@ class GestureRecognizerML:
             pred_label = prediction[0]
             if pred_label in ["ATAS", "BAWAH", "KIRI", "KANAN", "AMBIL", "ENTER"]:
                 return pred_label
-        index_up = lm[8].y < lm[6].y
-        thumb_dist = math.hypot(lm[4].x - lm[5].x, lm[4].y - lm[5].y)
-        thumb_loose = thumb_dist > 0.05
-        if lm[8].y > lm[6].y and lm[12].y > lm[10].y and lm[16].y > lm[14].y:
-            return "FIST"
-        if index_up and thumb_loose:
-            return "PISTOL"
         return pred_label
 class OneEuroFilter:
     def __init__(self, t0, x0, dx0=0.0, min_cutoff=0.8, beta=0.03, d_cutoff=1.0):
@@ -83,6 +93,7 @@ class GestureThread(threading.Thread):
         self.camera_path = camera_path
         self.recognizer = GestureRecognizerML()
         self._current_gesture = "None"
+        self._prev_gesture = "None"
         self._gesture_buffer = collections.deque(maxlen=5)
         self._hand_pos = [0.5, 0.5]
         self._velocity_y = 0.0
@@ -134,6 +145,10 @@ class GestureThread(threading.Thread):
                         gesture = self.recognizer.recognize(hand_landmarks)
                         self._gesture_buffer.append(gesture)
                         smoothed_gesture = max(set(self._gesture_buffer), key=self._gesture_buffer.count)
+                        is_shooting_g = smoothed_gesture in ["PISTOL", "ATAS"]
+                        was_shooting_g = self._prev_gesture in ["PISTOL", "ATAS"]
+                        transition_to_shoot = is_shooting_g and not was_shooting_g
+                        self._prev_gesture = smoothed_gesture
                         tip = hand_landmarks.landmark[8]
                         raw_v_y = self._last_y - tip.y
                         self._velocity_y = (alpha * raw_v_y) + (1.0 - alpha) * self._velocity_y
@@ -142,7 +157,8 @@ class GestureThread(threading.Thread):
                             t_now = time.time()
                             self._hand_pos[0] = self.filter_x(t_now, tip.x)
                             self._hand_pos[1] = self.filter_y(t_now, tip.y)
-                            if smoothed_gesture == "PISTOL" and self._velocity_y > 0.04:
+                            jerk_fired = (is_shooting_g and self._velocity_y > 0.025)
+                            if (transition_to_shoot or jerk_fired):
                                 if time.time() - self._last_shot_time > 0.25:
                                     self._recoil_triggered = True
                                     self._last_shot_time = time.time()
