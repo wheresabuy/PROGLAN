@@ -122,7 +122,7 @@ class ShootingRangeUltimate(MiniGame):
         gt = getattr(self.manager.main_engine, "gesture_thread", None)
         if gt:
             g = gt.current_gesture
-            if g == "FIST" and not self.weapon.is_reloading and self.weapon.ammo < self.weapon.ammo_max:
+            if g in ["FIST", "RELOAD"] and not self.weapon.is_reloading and self.weapon.ammo < self.weapon.ammo_max:
                 self.weapon.reload()
 
         is_auto = self.current_weapon_name in ["UZI", "SCAR"]

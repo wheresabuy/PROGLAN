@@ -100,7 +100,7 @@ Berikut adalah tabel penjelasan baris demi baris dari kode sumber `shooting_rang
 | **117** | `        self.timer -= dt / 60.0` | Mengurangi sisa waktu bermain minigame. |
 | **118** | `        if self.timer <= 0: self.exit_game({'score': self.score, 'bronze_earned': self.bronze_earned})` | Jika waktu habis, matikan minigame dan laporkan skor ke Sanctuary. |
 | **119** | `        for w in self.weapons.values(): w.update()` | Memperbarui status cooldown internal di seluruh daftar senjata. |
-| **120-127** | `        # Gesture-based reloading ...` | **Reload Gestur**: Membaca thread gestur tangan. Jika tangan mengepal (`FIST`) dan magazine belum penuh, picu reload otomatis. |
+| **120-127** | `        # Gesture-based reloading ...` | **Reload Gestur**: Membaca thread gestur tangan. Jika tangan mengepal (`FIST`) atau gestur (`RELOAD`) terdeteksi dan magazine belum penuh, picu reload otomatis. |
 | **128-133** | `        is_auto = self.current_weapon_name in ["UZI", "SCAR"] ...` | **Tembak Otomatis (Uzi/Scar)**: Jika tombol mouse ditekan terus menerus ATAU gestur tangan berbentuk pistol (`PISTOL`) diacungkan, tembak secara otomatis secepat mungkin sesuai jeda senjata. |
 | **134-135** | `        if self.flash_timer > 0: self.flash_timer -= 1` | Mengurangi timer kedipan efek tembak. |
 | **136** | `        if self.shake_v > 0: self.shake_v *= 0.85` | Meredam getaran layar secara bertahap (dikalikan 0.85 per frame). |

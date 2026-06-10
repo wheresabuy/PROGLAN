@@ -33,10 +33,10 @@ class GestureRecognizerML:
     def recognize(self, hand_landmarks, in_minigame=False):
         lm = hand_landmarks.landmark
         if in_minigame:
-            # Cek apakah model ML sudah dilatih untuk gestur minigame (PISTOL, AIM, FIST)
+            # Cek apakah model ML sudah dilatih untuk gestur minigame (PISTOL, AIM, FIST, RELOAD)
             has_ml_minigame = False
             if self.model is not None and hasattr(self.model, 'classes_'):
-                has_ml_minigame = any(c in self.model.classes_ for c in ["PISTOL", "AIM", "FIST"])
+                has_ml_minigame = any(c in self.model.classes_ for c in ["PISTOL", "AIM", "FIST", "RELOAD"])
             
             if has_ml_minigame:
                 data = []
@@ -48,7 +48,7 @@ class GestureRecognizerML:
                 df_input = pd.DataFrame([data], columns=columns)
                 prediction = self.model.predict(df_input)
                 pred_label = prediction[0]
-                if pred_label in ["PISTOL", "AIM", "FIST"]:
+                if pred_label in ["PISTOL", "AIM", "FIST", "RELOAD"]:
                     return pred_label
                 return "None"
             else:
