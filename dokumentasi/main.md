@@ -125,14 +125,14 @@ Berikut adalah tabel penjelasan baris demi baris dari kode sumber `main.py`:
 | **353** | `        if minigame_manager.in_minigame:` | **LOGIKA JIKA SEDANG DI DALAM MINIGAME (CITY UNDER ATTACK)**. |
 | **354-358** | `            for event in events: if event.type == pygame.QUIT: ...` | Penutupan aman program. |
 | **359-360** | `                elif event.type == pygame.MOUSEMOTION: smoothed_hx, smoothed_hy = event.pos` | Membaca kursor mouse fisik pemain jika bermain menggunakan mouse. |
-| **361** | `                minigame_manager.active_game.handle_event(event)` | Meneruskan event keyboard/mouse fisik ke sistem event minigame. |
-| **362-364** | `            if current_g != "None": target_hx = int(h_pos[0] * WIDTH) ...` | Menghitung koordinat piksel bidikan target dari rasio normalisasi MediaPipe (0.0 s.d 1.0) dikalikan lebar/tinggi layar. |
+| **361** | `                if minigame_manager.active_game:` | Memeriksa ketersediaan objek game sebelum meneruskan event keyboard/mouse fisik ke sistem event minigame. |
+| **362** | `            if minigame_manager.active_game is None: continue` | **Penanganan Crash Keluar Awal**: Jika pemain menekan ESC/Q untuk keluar lebih awal, loop frame akan dilewati agar tidak terjadi crash AttributeError. |
+| **363-364** | `            if current_g != "None": target_hx = int(h_pos[0] * WIDTH) ...` | Menghitung koordinat piksel bidikan target dari rasio normalisasi MediaPipe (0.0 s.d 1.0) dikalikan lebar/tinggi layar. |
 | **365-367** | `                smoothed_hx = smoothed_hx + (target_hx - smoothed_hx) * 0.40 ...` | **Smooth Lerp Filter**: Meredam gerakan kursor sebesar 40% agar gerakan tangan goyah diredam menjadi halus. |
-| **368-369** | `                fake_move = pygame.event.Event(pygame.MOUSEMOTION, {'pos': (int(smoothed_hx), int(smoothed_hy))}) ...` | Membuat event pergerakan kursor buatan dan mengirimkannya ke minigame agar retikel kursor bidikan bergeser. |
+| **368-369** | `                fake_move = pygame.event.Event(...)` | Membuat event pergerakan kursor buatan dan mengirimkannya ke minigame agar retikel kursor bidikan bergeser. |
 | **370-371** | `            if gesture_thread.recoil_active:` | Jika sinyal kejutan tembakan (recoil/sentakan telunjuk) terdeteksi aktif di thread kamera. |
-| **372** | `                minigame_manager.active_game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, {'button': 1}))` | Membuat event klik kiri mouse buatan untuk memicu tembakan peluru senjata di minigame. |
-| **373** | `            minigame_manager.update(dt)` | Memperbarui logika waktu, pergerakan zombie, dan peluru minigame. |
-| **374** | `            minigame_manager.draw()` | Menggambar latar belakang kota pertahanan, zombie, partikel, status amunisi, dan kursor bidik. |
+| **372** | `                minigame_manager.active_game.handle_event(...)` | Membuat event klik kiri mouse buatan untuk memicu tembakan peluru senjata di minigame. |
+| **373-374** | `            if minigame_manager.active_game:` | Memastikan objek minigame masih aktif sebelum memproses pembaruan logika waktu dan penggambaran grafis. |
 | **375-378** | `            cam_surf = gesture_thread.frame ...` | Merender layar monitor feed webcam kecil berukuran 160x120px di pojok kanan atas minigame, beserta garis tepi cyan dan label teks nama gestur terdeteksi (`AIM`, `PISTOL`, atau `FIST`). |
 | **379-380** | `            pygame.display.flip(); continue` | Segarkan layar game loop, lewati pemrosesan alur Sanctuary. |
 | **381-386** | `        for event in events: if event.type == pygame.QUIT: ...` | **LOGIKA EKSPLORASI SANCTUARY**: Tangani event penutupan game. |

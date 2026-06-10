@@ -359,7 +359,10 @@ def main():
                     pygame.quit(); sys.exit()
                 elif event.type == pygame.MOUSEMOTION:
                     smoothed_hx, smoothed_hy = event.pos
-                minigame_manager.active_game.handle_event(event)
+                if minigame_manager.active_game:
+                    minigame_manager.active_game.handle_event(event)
+            if minigame_manager.active_game is None:
+                continue
             if current_g != "None":
                 target_hx = int(h_pos[0] * WIDTH)
                 target_hy = int(h_pos[1] * HEIGHT)
@@ -370,8 +373,9 @@ def main():
                 minigame_manager.active_game.handle_event(fake_move)
             if gesture_thread.recoil_active:
                 minigame_manager.active_game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, {'button': 1}))
-            minigame_manager.update(dt)
-            minigame_manager.draw()
+            if minigame_manager.active_game:
+                minigame_manager.update(dt)
+                minigame_manager.draw()
             cam_surf = gesture_thread.frame
             if cam_surf:
                 screen.blit(cam_surf, (WIDTH - 180, 90))
