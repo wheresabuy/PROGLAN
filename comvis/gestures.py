@@ -31,49 +31,24 @@ class GestureRecognizerML:
         else:
             print("Peringatan: Model belum dilatih. Gunakan train_model.py!")
     def recognize(self, hand_landmarks, in_minigame=False):
-        lm = hand_landmarks.landmark
-        if in_minigame:
-            hand_scale = math.hypot(lm[9].x - lm[0].x, lm[9].y - lm[0].y)
-            if hand_scale < 0.01:
-                hand_scale = 0.01
-            d_index = math.hypot(lm[8].x - lm[5].x, lm[8].y - lm[5].y)
-            d_middle = math.hypot(lm[12].x - lm[9].x, lm[12].y - lm[9].y)
-            d_ring = math.hypot(lm[16].x - lm[13].x, lm[16].y - lm[13].y)
-            d_pinky = math.hypot(lm[20].x - lm[17].x, lm[20].y - lm[17].y)
-            r_index = d_index / hand_scale
-            r_middle = d_middle / hand_scale
-            r_ring = d_ring / hand_scale
-            r_pinky = d_pinky / hand_scale
-            is_i = r_index > 0.5
-            is_m = r_middle > 0.5
-            is_r = r_ring > 0.5
-            is_p = r_pinky > 0.5
-            open_count = sum([is_i, is_m, is_r, is_p])
-            if open_count == 0:
-                return "FIST"
-            elif open_count == 1:
-                return "PISTOL"
-            elif open_count == 2:
-                return "WEAPON2"
-            elif open_count == 3:
-                return "WEAPON3"
+        pred_label = "None"
+        if self.model is not None:
+            data = []
+            wrist = hand_landmarks.landmark[0]
+            for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)
+            for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)
+            for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)
+            columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]
+            df_input = pd.DataFrame([data], columns=columns)
+            prediction = self.model.predict(df_input)
+            pred_label = prediction[0]
+            if in_minigame:
+                if pred_label in ["PISTOL", "WEAPON2", "WEAPON3", "WEAPON4", "FIST"]:
+                    return pred_label
             else:
-                return "WEAPON4"
-        else:
-            pred_label = "None"
-            if self.model is not None:
-                data = []
-                wrist = hand_landmarks.landmark[0]
-                for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)
-                for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)
-                for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)
-                columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]
-                df_input = pd.DataFrame([data], columns=columns)
-                prediction = self.model.predict(df_input)
-                pred_label = prediction[0]
                 if pred_label in ["ATAS", "BAWAH", "KIRI", "KANAN", "AMBIL"]:
                     return pred_label
-            return "None"
+        return "None"
 class OneEuroFilter:
     def __init__(self, t0, x0, dx0=0.0, min_cutoff=0.8, beta=0.03, d_cutoff=1.0):
         self.min_cutoff = float(min_cutoff)
