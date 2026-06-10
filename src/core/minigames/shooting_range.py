@@ -63,6 +63,10 @@ class ShootingRangeUltimate(MiniGame):
             self.weapons[w_key] = TacticalWeapon(w_copy, max(15, 60 - upgrades["reload_level"] * 15))
         self.current_weapon_name, self.targets, self.particles, self.floating_texts, self.flash_timer, self.shake_v = "SCAR", [], [], [], 0, 0
         self.font_header, self.font_tactical = pygame.font.SysFont("monospace", 36, bold=True), pygame.font.SysFont("monospace", 18, bold=True)
+        try:
+            self.shoot_sfx = pygame.mixer.Sound("assets/suarapistol.mp3")
+            self.shoot_sfx.set_volume(0.6)
+        except: self.shoot_sfx = None
 
     @property
     def weapon(self): return self.weapons[self.current_weapon_name]
@@ -71,6 +75,7 @@ class ShootingRangeUltimate(MiniGame):
         if event.type == pygame.MOUSEMOTION: self.crosshair = list(event.pos)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.weapon.can_shoot():
             self.weapon.shoot(); self.flash_timer, self.shake_v = 5, self.weapon.type["recoil"]
+            if self.shoot_sfx: self.shoot_sfx.play()
             hit = False
             for t in self.targets:
                 hx, hy, hr = t['pos'][0], t['pos'][1] - int(t['size'] * 0.5), int(t['size'] * 0.4)
