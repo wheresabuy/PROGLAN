@@ -44,25 +44,21 @@ class GestureRecognizerML:
             r_middle = d_middle / hand_scale
             r_ring = d_ring / hand_scale
             r_pinky = d_pinky / hand_scale
-            is_i = r_index > 0.55
-            is_m = r_middle > 0.55
-            is_r = r_ring > 0.55
-            is_p = r_pinky > 0.55
-            not_i = r_index < 0.45
-            not_m = r_middle < 0.45
-            not_r = r_ring < 0.45
-            not_p = r_pinky < 0.45
-            if is_i and not_m and not_r and not_p:
-                return "PISTOL"
-            if is_i and is_m and not_r and not_p:
-                return "WEAPON2"
-            if is_i and is_m and is_r and not_p:
-                return "WEAPON3"
-            if is_i and is_m and is_r and is_p:
-                return "WEAPON4"
-            if not_i and not_m and not_r and not_p:
+            is_i = r_index > 0.5
+            is_m = r_middle > 0.5
+            is_r = r_ring > 0.5
+            is_p = r_pinky > 0.5
+            open_count = sum([is_i, is_m, is_r, is_p])
+            if open_count == 0:
                 return "FIST"
-            return "None"
+            elif open_count == 1:
+                return "PISTOL"
+            elif open_count == 2:
+                return "WEAPON2"
+            elif open_count == 3:
+                return "WEAPON3"
+            else:
+                return "WEAPON4"
         else:
             pred_label = "None"
             if self.model is not None:
