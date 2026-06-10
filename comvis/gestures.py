@@ -30,51 +30,54 @@ class GestureRecognizerML:
             print("Model Machine Learning berhasil dimuat.")
         else:
             print("Peringatan: Model belum dilatih. Gunakan train_model.py!")
-    def recognize(self, hand_landmarks):
+    def recognize(self, hand_landmarks, in_minigame=False):
         lm = hand_landmarks.landmark
-        hand_scale = math.hypot(lm[9].x - lm[0].x, lm[9].y - lm[0].y)
-        if hand_scale < 0.01:
-            hand_scale = 0.01
-        d_index = math.hypot(lm[8].x - lm[5].x, lm[8].y - lm[5].y)
-        d_middle = math.hypot(lm[12].x - lm[9].x, lm[12].y - lm[9].y)
-        d_ring = math.hypot(lm[16].x - lm[13].x, lm[16].y - lm[13].y)
-        d_pinky = math.hypot(lm[20].x - lm[17].x, lm[20].y - lm[17].y)
-        r_index = d_index / hand_scale
-        r_middle = d_middle / hand_scale
-        r_ring = d_ring / hand_scale
-        r_pinky = d_pinky / hand_scale
-        is_i = r_index > 0.55
-        is_m = r_middle > 0.55
-        is_r = r_ring > 0.55
-        is_p = r_pinky > 0.55
-        not_i = r_index < 0.45
-        not_m = r_middle < 0.45
-        not_r = r_ring < 0.45
-        not_p = r_pinky < 0.45
-        if is_i and not_m and not_r and not_p:
-            return "PISTOL"
-        if is_i and is_m and not_r and not_p:
-            return "WEAPON2"
-        if is_i and is_m and is_r and not_p:
-            return "WEAPON3"
-        if is_i and is_m and is_r and is_p:
-            return "WEAPON4"
-        if not_i and not_m and not_r and not_p:
-            return "FIST"
-        pred_label = "None"
-        if self.model is not None:
-            data = []
-            wrist = hand_landmarks.landmark[0]
-            for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)
-            for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)
-            for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)
-            columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]
-            df_input = pd.DataFrame([data], columns=columns)
-            prediction = self.model.predict(df_input)
-            pred_label = prediction[0]
-            if pred_label in ["ATAS", "BAWAH", "KIRI", "KANAN", "AMBIL", "ENTER"]:
-                return pred_label
-        return pred_label
+        if in_minigame:
+            hand_scale = math.hypot(lm[9].x - lm[0].x, lm[9].y - lm[0].y)
+            if hand_scale < 0.01:
+                hand_scale = 0.01
+            d_index = math.hypot(lm[8].x - lm[5].x, lm[8].y - lm[5].y)
+            d_middle = math.hypot(lm[12].x - lm[9].x, lm[12].y - lm[9].y)
+            d_ring = math.hypot(lm[16].x - lm[13].x, lm[16].y - lm[13].y)
+            d_pinky = math.hypot(lm[20].x - lm[17].x, lm[20].y - lm[17].y)
+            r_index = d_index / hand_scale
+            r_middle = d_middle / hand_scale
+            r_ring = d_ring / hand_scale
+            r_pinky = d_pinky / hand_scale
+            is_i = r_index > 0.55
+            is_m = r_middle > 0.55
+            is_r = r_ring > 0.55
+            is_p = r_pinky > 0.55
+            not_i = r_index < 0.45
+            not_m = r_middle < 0.45
+            not_r = r_ring < 0.45
+            not_p = r_pinky < 0.45
+            if is_i and not_m and not_r and not_p:
+                return "PISTOL"
+            if is_i and is_m and not_r and not_p:
+                return "WEAPON2"
+            if is_i and is_m and is_r and not_p:
+                return "WEAPON3"
+            if is_i and is_m and is_r and is_p:
+                return "WEAPON4"
+            if not_i and not_m and not_r and not_p:
+                return "FIST"
+            return "None"
+        else:
+            pred_label = "None"
+            if self.model is not None:
+                data = []
+                wrist = hand_landmarks.landmark[0]
+                for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)
+                for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)
+                for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)
+                columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]
+                df_input = pd.DataFrame([data], columns=columns)
+                prediction = self.model.predict(df_input)
+                pred_label = prediction[0]
+                if pred_label in ["ATAS", "BAWAH", "KIRI", "KANAN", "AMBIL"]:
+                    return pred_label
+            return "None"
 class OneEuroFilter:
     def __init__(self, t0, x0, dx0=0.0, min_cutoff=0.8, beta=0.03, d_cutoff=1.0):
         self.min_cutoff = float(min_cutoff)
@@ -116,6 +119,7 @@ class GestureThread(threading.Thread):
         self._lock = threading.Lock()
         self.running = True
         self.daemon = True
+        self.in_minigame = False
         t_now = time.time()
         self.filter_x = OneEuroFilter(t_now, 0.5, min_cutoff=1.5, beta=0.15)
         self.filter_y = OneEuroFilter(t_now, 0.5, min_cutoff=1.5, beta=0.15)
@@ -154,11 +158,11 @@ class GestureThread(threading.Thread):
                         hand_landmarks = results.multi_hand_landmarks[0]
                         self.recognizer.mp_draw.draw_landmarks(
                             flipped_frame, hand_landmarks, self.recognizer.mp_hands.HAND_CONNECTIONS)
-                        gesture = self.recognizer.recognize(hand_landmarks)
+                        gesture = self.recognizer.recognize(hand_landmarks, self.in_minigame)
                         self._gesture_buffer.append(gesture)
                         smoothed_gesture = max(set(self._gesture_buffer), key=self._gesture_buffer.count)
-                        is_shooting_g = smoothed_gesture in ["PISTOL", "WEAPON2", "WEAPON3", "WEAPON4", "ATAS"]
-                        was_shooting_g = self._prev_gesture in ["PISTOL", "WEAPON2", "WEAPON3", "WEAPON4", "ATAS"]
+                        is_shooting_g = smoothed_gesture in ["PISTOL", "WEAPON2", "WEAPON3", "WEAPON4"]
+                        was_shooting_g = self._prev_gesture in ["PISTOL", "WEAPON2", "WEAPON3", "WEAPON4"]
                         transition_to_shoot = is_shooting_g and not was_shooting_g
                         self._prev_gesture = smoothed_gesture
                         tip = hand_landmarks.landmark[8]

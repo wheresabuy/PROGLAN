@@ -117,6 +117,7 @@ def main():
     while True:
         dt = clock.tick(60) / 16.67
         events = pygame.event.get()
+        gesture_thread.in_minigame = minigame_manager.in_minigame
         current_g = gesture_thread.current_gesture
         h_pos = gesture_thread.hand_pos
         if wardrobe_active:
