@@ -33,33 +33,53 @@ class GestureRecognizerML:
     def recognize(self, hand_landmarks, in_minigame=False):
         lm = hand_landmarks.landmark
         if in_minigame:
-            hand_scale = math.hypot(lm[9].x - lm[0].x, lm[9].y - lm[0].y)
-            if hand_scale < 0.01:
-                hand_scale = 0.01
-            d_index = math.hypot(lm[8].x - lm[5].x, lm[8].y - lm[5].y)
-            d_middle = math.hypot(lm[12].x - lm[9].x, lm[12].y - lm[9].y)
-            d_ring = math.hypot(lm[16].x - lm[13].x, lm[16].y - lm[13].y)
-            d_pinky = math.hypot(lm[20].x - lm[17].x, lm[20].y - lm[17].y)
-            thumb_dist = math.hypot(lm[4].x - lm[5].x, lm[4].y - lm[5].y)
-            r_index = d_index / hand_scale
-            r_middle = d_middle / hand_scale
-            r_ring = d_ring / hand_scale
-            r_pinky = d_pinky / hand_scale
-            r_thumb = thumb_dist / hand_scale
-            is_index_open = r_index > 0.5
-            is_middle_folded = r_middle < 0.45
-            is_ring_folded = r_ring < 0.45
-            is_pinky_folded = r_pinky < 0.45
-            is_thumb_loose = r_thumb > 0.65
-            if is_index_open and is_middle_folded and is_ring_folded and is_pinky_folded:
-                return "PISTOL" if is_thumb_loose else "AIM"
-            is_index_folded = r_index < 0.4
-            is_middle_folded_strict = r_middle < 0.4
-            is_ring_folded_strict = r_ring < 0.4
-            is_pinky_folded_strict = r_pinky < 0.4
-            if is_index_folded and is_middle_folded_strict and is_ring_folded_strict and is_pinky_folded_strict:
-                return "FIST"
-            return "None"
+            # Cek apakah model ML sudah dilatih untuk gestur minigame (PISTOL, AIM, FIST)
+            has_ml_minigame = False
+            if self.model is not None and hasattr(self.model, 'classes_'):
+                has_ml_minigame = any(c in self.model.classes_ for c in ["PISTOL", "AIM", "FIST"])
+            
+            if has_ml_minigame:
+                data = []
+                wrist = hand_landmarks.landmark[0]
+                for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)
+                for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)
+                for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)
+                columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]
+                df_input = pd.DataFrame([data], columns=columns)
+                prediction = self.model.predict(df_input)
+                pred_label = prediction[0]
+                if pred_label in ["PISTOL", "AIM", "FIST"]:
+                    return pred_label
+                return "None"
+            else:
+                # Logika matematika (heuristik) sebagai fallback jika model ML belum dilatih
+                hand_scale = math.hypot(lm[9].x - lm[0].x, lm[9].y - lm[0].y)
+                if hand_scale < 0.01:
+                    hand_scale = 0.01
+                d_index = math.hypot(lm[8].x - lm[5].x, lm[8].y - lm[5].y)
+                d_middle = math.hypot(lm[12].x - lm[9].x, lm[12].y - lm[9].y)
+                d_ring = math.hypot(lm[16].x - lm[13].x, lm[16].y - lm[13].y)
+                d_pinky = math.hypot(lm[20].x - lm[17].x, lm[20].y - lm[17].y)
+                thumb_dist = math.hypot(lm[4].x - lm[5].x, lm[4].y - lm[5].y)
+                r_index = d_index / hand_scale
+                r_middle = d_middle / hand_scale
+                r_ring = d_ring / hand_scale
+                r_pinky = d_pinky / hand_scale
+                r_thumb = thumb_dist / hand_scale
+                is_index_open = r_index > 0.5
+                is_middle_folded = r_middle < 0.45
+                is_ring_folded = r_ring < 0.45
+                is_pinky_folded = r_pinky < 0.45
+                is_thumb_loose = r_thumb > 0.65
+                if is_index_open and is_middle_folded and is_ring_folded and is_pinky_folded:
+                    return "PISTOL" if is_thumb_loose else "AIM"
+                is_index_folded = r_index < 0.4
+                is_middle_folded_strict = r_middle < 0.4
+                is_ring_folded_strict = r_ring < 0.4
+                is_pinky_folded_strict = r_pinky < 0.4
+                if is_index_folded and is_middle_folded_strict and is_ring_folded_strict and is_pinky_folded_strict:
+                    return "FIST"
+                return "None"
         else:
             pred_label = "None"
             if self.model is not None:

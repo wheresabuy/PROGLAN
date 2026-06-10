@@ -65,49 +65,31 @@ File `gestures.py` bertanggung jawab atas seluruh proses visi komputer (Computer
 | 32 | `            print("Peringatan: Model belum dilatih. Gunakan train_model.py!")` | Cetak status peringatan ke terminal. |
 | 33 | `    def recognize(self, hand_landmarks, in_minigame=False):` | Metode utama untuk mengenali gestur berdasarkan status permainan. |
 | 34 | `        lm = hand_landmarks.landmark` | Menyimpan referensi 21 titik koordinat tangan. |
-| 35 | `        if in_minigame:` | **LOGIKA MINIGAME (Bebas Rotasi/Skala)**: |
-| 36 | `            hand_scale = math.hypot(lm[9].x - lm[0].x, lm[9].y - lm[0].y)` | Menghitung jarak pergelangan tangan (0) ke pangkal jari tengah (9) sebagai skala ukuran tangan. |
-| 37 | `            if hand_scale < 0.01:` | Mencegah pembagian dengan nol dengan menetapkan batas ukuran minimal. |
-| 38 | `                hand_scale = 0.01` | Nilai batas minimal skala tangan. |
-| 39 | `            d_index = math.hypot(lm[8].x - lm[5].x, lm[8].y - lm[5].y)` | Mengukur panjang jari telunjuk (jarak titik 5 ke 8). |
-| 40 | `            d_middle = math.hypot(lm[12].x - lm[9].x, lm[12].y - lm[9].y)` | Mengukur panjang jari tengah (jarak titik 9 ke 12). |
-| 41 | `            d_ring = math.hypot(lm[16].x - lm[13].x, lm[16].y - lm[13].y)` | Mengukur panjang jari manis (jarak titik 13 ke 16). |
-| 42 | `            d_pinky = math.hypot(lm[20].x - lm[17].x, lm[20].y - lm[17].y)` | Mengukur panjang jari kelingking (jarak titik 17 ke 20). |
-| 43 | `            thumb_dist = math.hypot(lm[4].x - lm[5].x, lm[4].y - lm[5].y)` | Mengukur jarak ujung jempol (4) ke pangkal telunjuk (5). |
-| 44 | `            r_index = d_index / hand_scale` | Menghitung rasio panjang telunjuk terhadap skala tangan. |
-| 45 | `            r_middle = d_middle / hand_scale` | Menghitung rasio panjang jari tengah terhadap skala tangan. |
-| 46 | `            r_ring = d_ring / hand_scale` | Menghitung rasio panjang jari manis terhadap skala tangan. |
-| 47 | `            r_pinky = d_pinky / hand_scale` | Menghitung rasio panjang kelingking terhadap skala tangan. |
-| 48 | `            r_thumb = thumb_dist / hand_scale` | Menghitung rasio jarak jempol terhadap skala tangan. |
-| 49 | `            is_index_open = r_index > 0.5` | Telunjuk dianggap terbuka jika rasionya > 0.5. |
-| 50 | `            is_middle_folded = r_middle < 0.45` | Jari tengah dianggap menekuk jika rasionya < 0.45. |
-| 51 | `            is_ring_folded = r_ring < 0.45` | Jari manis dianggap menekuk jika rasionya < 0.45. |
-| 52 | `            is_pinky_folded = r_pinky < 0.45` | Kelingking dianggap menekuk jika rasionya < 0.45. |
-| 53 | `            is_thumb_loose = r_thumb > 0.65` | Jempol dianggap tegak terbuka (rileks) jika rasionya > 0.65. |
-| 54 | `            if is_index_open and is_middle_folded and is_ring_folded and is_pinky_folded:` | Jika telunjuk lurus menunjuk dan 3 jari lainnya tertekuk. |
-| 55 | `                return "PISTOL" if is_thumb_loose else "AIM"` | Jika jempol tegak kembalikan `"PISTOL"` (Tembak), jika jempol menekuk kembalikan `"AIM"` (Bidik saja). |
-| 56 | `            is_index_folded = r_index < 0.4` | Telunjuk dianggap menekuk jika rasionya < 0.4. |
-| 57 | `            is_middle_folded_strict = r_middle < 0.4` | Jari tengah menekuk ketat jika rasionya < 0.4. |
-| 58 | `            is_ring_folded_strict = r_ring < 0.4` | Jari manis menekuk ketat jika rasionya < 0.4. |
-| 59 | `            is_pinky_folded_strict = r_pinky < 0.4` | Kelingking menekuk ketat jika rasionya < 0.4. |
-| 60 | `            if is_index_folded and is_middle_folded_strict and is_ring_folded_strict and is_pinky_folded_strict:` | Jika keempat jari ditekuk semua (mengepal). |
-| 61 | `                return "FIST"` | Mengembalikan status `"FIST"` (Reload). |
-| 62 | `            return "None"` | Jika gestur tangan acak lainnya, kembalikan `"None"`. |
-| 63 | `        else:` | **LOGIKA EKSPLORASI UTAMA (Menggunakan Model ML)**: |
-| 64 | `            pred_label = "None"` | Default label adalah `"None"`. |
-| 65 | `            if self.model is not None:` | Jika model ML berhasil dimuat. |
-| 66 | `                data = []` | Inisialisasi list untuk menampung koordinat input. |
-| 67 | `                wrist = hand_landmarks.landmark[0]` | Mengambil koordinat pergelangan tangan sebagai titik nol referensi. |
-| 68 | `                for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)` | Menyimpan koordinat selisih X dari wrist untuk ke-21 titik. |
-| 69 | `                for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)` | Menyimpan koordinat selisih Y dari wrist untuk ke-21 titik. |
-| 70 | `                for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)` | Menyimpan koordinat selisih Z dari wrist untuk ke-21 titik. |
-| 71 | `                columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]` | Membuat nama kolom koordinat (x0..x20, y0..y20, z0..z20). |
-| 72 | `                df_input = pd.DataFrame([data], columns=columns)` | Membuat DataFrame pandas dengan data relatif tersebut sebagai input model. |
-| 73 | `                prediction = self.model.predict(df_input)` | Memprediksi gestur menggunakan model RandomForest yang sudah dilatih. |
-| 74 | `                pred_label = prediction[0]` | Mengambil label gestur hasil prediksi. |
-| 75 | `                if pred_label in ["ATAS", "BAWAH", "KIRI", "KANAN", "AMBIL"]:` | Memastikan hasil prediksi merupakan bagian dari aksi navigasi luar game. |
-| 76 | `                    return pred_label` | Kembalikan label navigasi tersebut. |
-| 77 | `            return "None"` | Kembalikan `"None"` jika model tidak memprediksi navigasi terdaftar. |
+| 35 | `        if in_minigame:` | **LOGIKA MINIGAME**: |
+| 36 | `            has_ml_minigame = False` | Inisialisasi status apakah model ML sudah memiliki kelas minigame. |
+| 37 | `            if self.model is not None and hasattr(self.model, 'classes_'):` | Memeriksa apakah model dimuat dan memiliki daftar kelas terlatih. |
+| 38 | `                has_ml_minigame = any(c in self.model.classes_ for c in ["PISTOL", "AIM", "FIST"])` | Memeriksa keberadaan kelas PISTOL, AIM, dan FIST di dalam model ML. |
+| 40 | `            if has_ml_minigame:` | Jika model ML mendukung gestur minigame, gunakan ML untuk prediksi. |
+| 41 | `                # ML Prediction logic ...` | Mengekstrak landmark, membuat DataFrame, memprediksi label dengan Random Forest. |
+| 48 | `                if pred_label in ["PISTOL", "AIM", "FIST"]: return pred_label` | Mengembalikan label minigame jika terdeteksi. |
+| 50 | `            else:` | **LOGIKA FALLBACK (Heuristik Matematika)**: Terpilih jika model belum dilatih. |
+| 51 | `                hand_scale = math.hypot(...)` | Menghitung skala ukuran tangan. |
+| 62 | `                if is_index_open and is_middle_folded and is_ring_folded and is_pinky_folded:` | Aturan deteksi: telunjuk lurus dan jari lain tertekuk. |
+| 63 | `                    return "PISTOL" if is_thumb_loose else "AIM"` | Kembalikan PISTOL jika jempol terbuka, AIM jika jempol ditekuk. |
+| 69 | `                if is_index_folded and is_middle_folded_strict and is_ring_folded_strict and is_pinky_folded_strict:` | Aturan deteksi: genggaman tangan (fist). |
+| 70 | `                    return "FIST"` | Mengembalikan status FIST (Reload). |
+| 71 | `                return "None"` | Default kembali ke None. |
+| 72 | `        else:` | **LOGIKA EKSPLORASI SANCTUARY (Selalu ML)**: |
+| 73 | `            pred_label = "None"` | Inisialisasi default label. |
+| 74 | `            if self.model is not None:` | Jika model ML aktif. |
+| 77-80 | `                for lm_node in hand_landmarks.landmark: data.append(...)` | Mengumpulkan koordinat X, Y, Z relatif terhadap pergelangan tangan (wrist). |
+| 81 | `                columns = ...` | Membuat nama kolom dataset. |
+| 82 | `                df_input = pd.DataFrame([data], columns=columns)` | Mengonversi ke DataFrame Pandas. |
+| 83 | `                prediction = self.model.predict(df_input)` | Memprediksi gestur dengan RandomForest. |
+| 84 | `                pred_label = prediction[0]` | Mengambil label hasil prediksi. |
+| 85 | `                if pred_label in ["ATAS", "BAWAH", "KIRI", "KANAN", "AMBIL"]:` | Memastikan hasil prediksi adalah tombol navigasi yang valid. |
+| 86 | `                    return pred_label` | Mengembalikan hasil label navigasi. |
+| 87 | `            return "None"` | Mengembalikan None jika tidak terdeteksi. |
 | 78 | `class OneEuroFilter:` | Mendefinisikan kelas filter One Euro untuk melembutkan fluktuasi koordinat. |
 | 102 | `class GestureThread(threading.Thread):` | Kelas Thread untuk menangkap frame kamera dan melakukan deteksi tangan secara terpisah. |
 | 103 | `    def __init__(self, camera_path):` | Inisialisasi thread dengan path kamera (index 0). |
