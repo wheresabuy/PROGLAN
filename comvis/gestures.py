@@ -40,16 +40,26 @@ class GestureRecognizerML:
             d_middle = math.hypot(lm[12].x - lm[9].x, lm[12].y - lm[9].y)
             d_ring = math.hypot(lm[16].x - lm[13].x, lm[16].y - lm[13].y)
             d_pinky = math.hypot(lm[20].x - lm[17].x, lm[20].y - lm[17].y)
+            thumb_dist = math.hypot(lm[4].x - lm[5].x, lm[4].y - lm[5].y)
             r_index = d_index / hand_scale
             r_middle = d_middle / hand_scale
             r_ring = d_ring / hand_scale
             r_pinky = d_pinky / hand_scale
-            is_i = r_index > 0.5
-            is_m = r_middle > 0.5
-            is_r = r_ring > 0.5
-            is_p = r_pinky > 0.5
-            open_count = sum([is_i, is_m, is_r, is_p])
-            return "FIST" if open_count == 0 else "PISTOL"
+            r_thumb = thumb_dist / hand_scale
+            is_index_open = r_index > 0.5
+            is_middle_folded = r_middle < 0.45
+            is_ring_folded = r_ring < 0.45
+            is_pinky_folded = r_pinky < 0.45
+            is_thumb_loose = r_thumb > 0.65
+            if is_index_open and is_middle_folded and is_ring_folded and is_pinky_folded:
+                return "PISTOL" if is_thumb_loose else "AIM"
+            is_index_folded = r_index < 0.4
+            is_middle_folded_strict = r_middle < 0.4
+            is_ring_folded_strict = r_ring < 0.4
+            is_pinky_folded_strict = r_pinky < 0.4
+            if is_index_folded and is_middle_folded_strict and is_ring_folded_strict and is_pinky_folded_strict:
+                return "FIST"
+            return "None"
         else:
             pred_label = "None"
             if self.model is not None:
