@@ -510,7 +510,7 @@ def main():
         elif current_g == "BAWAH": keys.overrides[pygame.K_DOWN] = True
         elif current_g == "KIRI": keys.overrides[pygame.K_LEFT] = True
         elif current_g == "KANAN": keys.overrides[pygame.K_RIGHT] = True
-        elif current_g == "PISTOL": interact_pressed = True # Gestur pistol untuk interaksi juga
+        elif current_g in ["PISTOL", "AMBIL", "ENTER"]: interact_pressed = True # Gestur pistol/ambil/enter untuk interaksi
 
         # Update Logika
         if not dialogue.active:

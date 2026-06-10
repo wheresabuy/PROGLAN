@@ -73,31 +73,37 @@ Berikut adalah pustaka-pustaka yang diimpor pada berkas ini beserta kegunaannya:
 | **39** | `    def recognize(self, hand_landmarks):` | Metode `recognize` untuk mendeteksi jenis gestur berdasarkan titik landmark tangan yang diterima. |
 | **40** | `        lm = hand_landmarks.landmark` | Mengambil daftar titik landmark koordinat tangan (21 titik). |
 | **41** | *(Kosong)* | Baris kosong untuk kerapian kode. |
-| **42** | `        index_up = lm[8].y < lm[6].y` | Memeriksa apakah ujung jari telunjuk (titik 8) berada di atas sendi tengahnya (titik 6). Karena nilai koordinat Y MediaPipe mengecil ke atas, tanda `<` berarti ujung jari lebih tinggi. |
-| **43** | `        thumb_dist = math.hypot(lm[4].x - lm[5].x, lm[4].y - lm[5].y)` | Menghitung jarak Euclidean (hipotenusa) antara ujung jempol (titik 4) dan pangkal telunjuk (titik 5). |
-| **44** | `        thumb_loose = thumb_dist > 0.05` | Jika jarak jempol lebih dari 0.05, maka jempol dianggap dalam posisi terbuka lebar / merenggang (`loose`). |
-| **45** | *(Kosong)* | Baris kosong untuk kerapian kode. |
-| **46** | `        if lm[8].y > lm[6].y and lm[12].y > lm[10].y and lm[16].y > lm[14].y:` | Logika manual untuk mendeteksi kepalan tangan (`FIST`): jika ujung telunjuk (8), jari tengah (12), dan manis (16) berada di bawah sendinya masing-masing (nilai Y lebih besar). |
-| **47** | `            return "FIST"` | Jika benar, langsung kembalikan gestur `"FIST"`. |
-| **48** | *(Kosong)* | Baris kosong untuk kerapian kode. |
-| **49** | `        if index_up and thumb_loose:` | Logika manual untuk gestur pistol (`PISTOL`): jika telunjuk mengacung ke atas dan jempol terbuka merenggang. |
-| **50** | `            return "PISTOL"` | Jika benar, kembalikan gestur `"PISTOL"`. |
-| **51** | *(Kosong)* | Baris kosong untuk kerapian kode. |
-| **52** | `        if self.model is None:` | Jika logika manual tidak terpenuhi dan ternyata model ML tidak ada/tidak termuat. |
-| **53** | `            return "None"` | Kembalikan nilai default `"None"`. |
-| **54** | *(Kosong)* | Baris kosong untuk kerapian kode. |
-| **55** | `        data = []` | Membuat list kosong `data` untuk menampung fitur masukan (features) model ML. |
-| **56** | `        wrist = hand_landmarks.landmark[0]` | Mengambil koordinat pergelangan tangan (landmark 0) sebagai titik acuan (offset). |
-| **57** | `        for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)` | Memasukkan selisih posisi sumbu X dari semua 21 landmark terhadap pergelangan tangan ke dalam `data`. |
-| **58** | `        for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)` | Memasukkan selisih posisi sumbu Y dari semua 21 landmark terhadap pergelangan tangan ke dalam `data`. |
-| **59** | `        for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)` | Memasukkan selisih posisi sumbu Z dari semua 21 landmark terhadap pergelangan tangan ke dalam `data`. |
-| **60** | *(Kosong)* | Baris kosong untuk kerapian kode. |
-| **61** | `        columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]` | Membuat daftar nama kolom (x0-x20, y0-y20, z0-z20) agar sesuai dengan struktur saat model ML dilatih. |
-| **62** | `        df_input = pd.DataFrame([data], columns=columns)` | Membuat objek Pandas DataFrame dari list data tersebut dengan nama kolom yang sudah dibuat. |
-| **63** | *(Kosong)* | Baris kosong untuk kerapian kode. |
-| **64** | `        prediction = self.model.predict(df_input)` | Melakukan prediksi gestur dengan mengirimkan DataFrame tersebut ke model ML. |
-| **65** | `        return prediction[0]` | Mengembalikan hasil label prediksi pertama (elemen ke-0) dari model ML. |
-| **66** | *(Kosong)* | Baris kosong untuk kerapian kode. |
+| **42** | `        # Cek model ML terlebih dahulu jika sudah dilatih` | Komentar penjelas bahwa pengecekan model ML diprioritaskan. |
+| **43** | `        pred_label = "None"` | Inisialisasi variabel label hasil prediksi model dengan nilai awal `"None"`. |
+| **44** | `        if self.model is not None:` | Mengecek apakah model ML (`gesture_model.pkl`) sudah dimuat dan tidak bernilai `None`. |
+| **45** | `            data = []` | Membuat list kosong `data` untuk menampung fitur masukan (features) model ML. |
+| **46** | `            wrist = hand_landmarks.landmark[0]` | Mengambil koordinat pergelangan tangan (landmark 0) sebagai titik acuan (offset). |
+| **47** | `            for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)` | Memasukkan selisih posisi sumbu X dari semua 21 landmark terhadap pergelangan tangan ke dalam `data`. |
+| **48** | `            for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)` | Memasukkan selisih posisi sumbu Y dari semua 21 landmark terhadap pergelangan tangan ke dalam `data`. |
+| **49** | `            for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)` | Memasukkan selisih posisi sumbu Z dari semua 21 landmark terhadap pergelangan tangan ke dalam `data`. |
+| **50** | *(Kosong)* | Baris kosong. |
+| **51** | `            columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]` | Membuat daftar nama kolom (x0-x20, y0-y20, z0-z20) agar sesuai dengan struktur saat model ML dilatih. |
+| **52** | `            df_input = pd.DataFrame([data], columns=columns)` | Membuat objek Pandas DataFrame dari list data tersebut dengan nama kolom yang sudah dibuat. |
+| **53** | *(Kosong)* | Baris kosong. |
+| **54** | `            prediction = self.model.predict(df_input)` | Melakukan prediksi gestur dengan mengirimkan DataFrame tersebut ke model ML. |
+| **55** | `            pred_label = prediction[0]` | Mengambil hasil label prediksi pertama (elemen ke-0) dari model ML. |
+| **56** | `            # Jika hasil prediksi adalah gerakan atau aksi terdaftar (bukan DIAM), langsung kembalikan` | Komentar penjelas untuk menyaring pergerakan/aksi terdaftar. |
+| **57** | `            if pred_label in ["ATAS", "BAWAH", "KIRI", "KANAN", "AMBIL", "ENTER"]:` | Jika prediksi adalah salah satu arah gerakan utama atau interaksi terdaftar. |
+| **58** | `                return pred_label` | Langsung kembalikan label prediksi tersebut agar karakter segera bergerak/beraksi. |
+| **59** | *(Kosong)* | Baris kosong. |
+| **60** | `        # Deteksi berbasis aturan (rule-based heuristic) sebagai fallback` | Komentar penjelas untuk deteksi manual jika model belum yakin atau mendeteksi DIAM. |
+| **61** | `        index_up = lm[8].y < lm[6].y` | Memeriksa apakah ujung jari telunjuk (titik 8) berada di atas sendi tengahnya (titik 6) untuk mendeteksi telunjuk tegak ke atas. |
+| **62** | `        thumb_dist = math.hypot(lm[4].x - lm[5].x, lm[4].y - lm[5].y)` | Menghitung jarak Euclidean antara ujung jempol (titik 4) dan pangkal telunjuk (titik 5). |
+| **63** | `        thumb_loose = thumb_dist > 0.05` | Menentukan status jempol merenggang jika jaraknya lebih dari 0.05. |
+| **64** | *(Kosong)* | Baris kosong. |
+| **65** | `        if lm[8].y > lm[6].y and lm[12].y > lm[10].y and lm[16].y > lm[14].y:` | Logika manual untuk mendeteksi kepalan tangan (`FIST`). |
+| **66** | `            return "FIST"` | Kembalikan gestur `"FIST"`. |
+| **67** | *(Kosong)* | Baris kosong. |
+| **68** | `        if index_up and thumb_loose:` | Logika manual untuk gestur pistol (`PISTOL`). |
+| **69** | `            return "PISTOL"` | Kembalikan gestur `"PISTOL"`. |
+| **70** | *(Kosong)* | Baris kosong. |
+| **71** | `        return pred_label` | Kembalikan label prediksi model ML (misal `"DIAM"` atau `"None"`) jika logika manual tidak terpenuhi. |
+| **72** | *(Kosong)* | Baris kosong penutup metode. |
 | **67** | `class OneEuroFilter:` | Mendefinisikan kelas `OneEuroFilter` yang digunakan untuk menyaring sinyal koordinat agar kursor bergerak mulus tanpa getaran (jitter). |
 | **68** | `    def __init__(self, t0, x0, dx0=0.0, min_cutoff=0.8, beta=0.03, d_cutoff=1.0):` | Konstruktor inisialisasi filter dengan parameter waktu awal (`t0`), posisi awal (`x0`), kecepatan awal (`dx0`), frekuensi cutoff minimum (`min_cutoff`), sensitivitas kecepatan (`beta`), dan cutoff turunan (`d_cutoff`). |
 | **69** | `        self.min_cutoff = float(min_cutoff)` | Menyimpan nilai frekuensi cutoff minimum. |

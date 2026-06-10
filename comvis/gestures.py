@@ -39,6 +39,25 @@ class GestureRecognizerML:
     def recognize(self, hand_landmarks):
         lm = hand_landmarks.landmark
         
+        # Cek model ML terlebih dahulu jika sudah dilatih
+        pred_label = "None"
+        if self.model is not None:
+            data = []
+            wrist = hand_landmarks.landmark[0]
+            for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)
+            for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)
+            for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)
+            
+            columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]
+            df_input = pd.DataFrame([data], columns=columns)
+            
+            prediction = self.model.predict(df_input)
+            pred_label = prediction[0]
+            # Jika hasil prediksi adalah gerakan atau aksi terdaftar (bukan DIAM), langsung kembalikan
+            if pred_label in ["ATAS", "BAWAH", "KIRI", "KANAN", "AMBIL", "ENTER"]:
+                return pred_label
+        
+        # Deteksi berbasis aturan (rule-based heuristic) sebagai fallback
         index_up = lm[8].y < lm[6].y 
         thumb_dist = math.hypot(lm[4].x - lm[5].x, lm[4].y - lm[5].y)
         thumb_loose = thumb_dist > 0.05 
@@ -48,21 +67,8 @@ class GestureRecognizerML:
 
         if index_up and thumb_loose:
             return "PISTOL"
-
-        if self.model is None:
-            return "None"
-        
-        data = []
-        wrist = hand_landmarks.landmark[0]
-        for lm_node in hand_landmarks.landmark: data.append(lm_node.x - wrist.x)
-        for lm_node in hand_landmarks.landmark: data.append(lm_node.y - wrist.y)
-        for lm_node in hand_landmarks.landmark: data.append(lm_node.z - wrist.z)
-        
-        columns = [f'x{i}' for i in range(21)] + [f'y{i}' for i in range(21)] + [f'z{i}' for i in range(21)]
-        df_input = pd.DataFrame([data], columns=columns)
-        
-        prediction = self.model.predict(df_input)
-        return prediction[0]
+            
+        return pred_label
 
 class OneEuroFilter:
     def __init__(self, t0, x0, dx0=0.0, min_cutoff=0.8, beta=0.03, d_cutoff=1.0):
