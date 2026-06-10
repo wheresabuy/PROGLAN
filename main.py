@@ -257,7 +257,7 @@ def main():
                             cost = UPGRADE_COSTS[current_lvl]
                             if currency.deduct_bronze(cost):
                                 weapon_upgrades[cat_key] += 1
-                                effects.flash_timer = 4
+                                effects.trigger_flash(4)
                     elif event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE, pygame.K_q]:
                         upgrade_shop_active = False
             game_logic.draw_ground(screen, camera)
