@@ -101,6 +101,8 @@ def main():
     upgrade_shop_active = False
     upgrade_shop_category = 0
     UPGRADE_COSTS = [100, 250, 500]
+    flashlight_on = False
+    battery_level = 100.0
     # weapon_upgrades defined early
     def update_player_wardrobe():
         from src.core.engine import Spritesheet
@@ -432,12 +434,18 @@ def main():
                 wardrobe_active = True
             elif signal == "OPEN_UPGRADE_SHOP":
                 upgrade_shop_active = True
+        
+        if flashlight_on:
+            battery_level = max(0.0, battery_level - 0.05)
+            if battery_level <= 0: flashlight_on = False
+
         game_logic.draw_ground(screen, camera)
         game_logic.draw_entities(screen, camera, player)
         player.draw(screen, camera)
+        effects.draw_darkness(screen, player.pos, camera, flashlight_on, battery_level, player.injured)
         effects.draw_flash(screen)
         dialogue.draw(screen)
-        hud.draw(screen, player, 100)
+        hud.draw(screen, player, battery_level)
         status = game_logic.get_status_text()
         pygame.draw.rect(screen, (10, 10, 15, 200), (10, HEIGHT-85, 480, 75), border_radius=5)
         pygame.draw.rect(screen, (0, 255, 255, 100), (10, HEIGHT-85, 480, 75), 1, border_radius=5)

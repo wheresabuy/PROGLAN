@@ -1,4 +1,4 @@
-import pygame, random, math, os
+import pygame, random, math, os, time
 from typing import Optional
 
 class Spritesheet:
@@ -65,13 +65,35 @@ class VisualEffects:
         self.flash_surf.fill((255,255,255))
         self.flash_timer = self.flash_duration = self.shake_amount = 0
     def draw_darkness(self, screen, p_pos, camera, light_on, bat, injured):
-        c = (25 + int(abs(math.sin(pygame.time.get_ticks() * 0.003)) * 40), 15, 15) if injured else (15, 15, 25)
+        # Waktu Indonesia (UTC+7) dipercepat 5x
+        game_secs = ((time.time() + 7*3600) * 5) % 86400
+        hour = game_secs / 3600.0
+        
+        # Intensitas Kegelapan (0.0 Siang - 1.0 Malam)
+        # Peak gelap jam 00:00, Terang jam 12:00
+        dark_mult = (math.cos((hour - 12) * math.pi / 12) + 1) / 2
+        
+        # Warna overlay untuk dikurangi (BLEND_RGBA_SUB)
+        # Malam: mendekati (180, 180, 220) | Siang: mendekati (0, 0, 0)
+        base_r = int(180 * dark_mult)
+        base_g = int(180 * dark_mult)
+        base_b = int(220 * dark_mult)
+
+        if injured:
+            pulse = int(abs(math.sin(pygame.time.get_ticks() * 0.003)) * 40)
+            base_r = min(255, base_r + pulse)
+            
+        c = (base_r, base_g, base_b)
         self.darkness_surf.fill((*c, 255))
+        
         if light_on and bat > 0:
             sp = camera.apply(p_pos)
             cx, cy = int(sp[0] + 32), int(sp[1] + 32)
-            for r in range(200, 0, -8):
-                pygame.draw.circle(self.darkness_surf, (0,0,0, max(0, min(255, int(255 * (1.0 - (r / 200)))))), (cx, cy), r)
+            # Lubang Senter: Jadikan hitam (0,0,0) agar tidak mengurangi warna screen
+            for r in range(250, 0, -10):
+                alpha = int(255 * (1.0 - (r / 250)))
+                pygame.draw.circle(self.darkness_surf, (0, 0, 0, alpha), (cx, cy), r)
+        
         screen.blit(self.darkness_surf, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
     def trigger_flash(self, dur=120): self.flash_timer, self.flash_duration, self.shake_amount = dur, max(1, dur), 15
     def draw_flash(self, screen):
